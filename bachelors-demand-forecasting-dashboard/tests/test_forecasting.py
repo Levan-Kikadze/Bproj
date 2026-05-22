@@ -4,6 +4,8 @@ import pandas as pd
 from src.forecasting import (
     calculate_mape,
     chronological_train_test_split,
+    run_exponential_smoothing_forecast,
+    run_linear_regression_forecast,
     run_moving_average_forecast,
 )
 
@@ -61,4 +63,49 @@ def test_moving_average_forecast_handles_too_few_observations():
     assert result.test_forecast.empty
     assert result.future_forecast.empty
     assert result.warnings
+
+
+def test_exponential_smoothing_forecast_can_include_prediction_intervals():
+    aggregated_df = pd.DataFrame(
+        {
+            "date": pd.date_range("2024-01-01", periods=40, freq="D"),
+            "revenue": np.linspace(100, 180, 40),
+        }
+    )
+
+    result = run_exponential_smoothing_forecast(
+        aggregated_df,
+        horizon=7,
+        confidence_level=0.95,
+    )
+
+    assert {"lower_bound", "upper_bound"}.issubset(result.future_forecast.columns)
+    assert result.confidence_level == 0.95
+
+
+def test_linear_regression_forecast_returns_model_details_and_intervals():
+    dates = pd.date_range("2024-01-01", periods=60, freq="D")
+    revenue = np.linspace(100, 160, 60) + np.where(dates.dayofweek >= 5, 12, 0)
+    promotion_active = (dates.dayofweek == 4).astype(int)
+
+    aggregated_df = pd.DataFrame(
+        {
+            "date": dates,
+            "revenue": revenue,
+            "promotion_active": promotion_active,
+        }
+    )
+
+    result = run_linear_regression_forecast(
+        aggregated_df,
+        horizon=7,
+        promotion_col="promotion_active",
+        confidence_level=0.9,
+    )
+
+    assert len(result.test_forecast) == 12
+    assert len(result.future_forecast) == 7
+    assert {"lower_bound", "upper_bound"}.issubset(result.test_forecast.columns)
+    assert result.model_details is not None and not result.model_details.empty
+    assert result.features_used is not None and "promotion_active" in result.features_used
 

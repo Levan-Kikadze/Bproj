@@ -79,6 +79,12 @@ def forecast_chart(
     )
 
     if not test_forecast_df.empty:
+        _add_interval_band(
+            figure,
+            test_forecast_df,
+            name="Test Interval",
+            fill_color="rgba(31, 119, 180, 0.14)",
+        )
         figure.add_trace(
             go.Scatter(
                 x=test_forecast_df["date"],
@@ -89,6 +95,12 @@ def forecast_chart(
         )
 
     if not future_forecast_df.empty:
+        _add_interval_band(
+            figure,
+            future_forecast_df,
+            name="Future Interval",
+            fill_color="rgba(255, 127, 14, 0.14)",
+        )
         figure.add_trace(
             go.Scatter(
                 x=future_forecast_df["date"],
@@ -105,6 +117,21 @@ def forecast_chart(
         yaxis_title="Revenue",
         template=PLOT_TEMPLATE,
     )
+    return figure
+
+
+def segment_forecast_comparison_chart(segment_forecast_df: pd.DataFrame, dimension: str) -> go.Figure:
+    """Create a line chart comparing future forecasts across segments."""
+    figure = px.line(
+        segment_forecast_df,
+        x="date",
+        y="predicted",
+        color=dimension,
+        markers=True,
+        title=f"Future Forecast Comparison by {dimension}",
+        template=PLOT_TEMPLATE,
+    )
+    figure.update_layout(yaxis_title="Predicted Revenue", xaxis_title="Date")
     return figure
 
 
@@ -139,4 +166,37 @@ def anomaly_chart(anomaly_df: pd.DataFrame) -> go.Figure:
         template=PLOT_TEMPLATE,
     )
     return figure
+
+
+def _add_interval_band(
+    figure: go.Figure,
+    forecast_df: pd.DataFrame,
+    name: str,
+    fill_color: str,
+) -> None:
+    if forecast_df.empty or {"lower_bound", "upper_bound"}.difference(forecast_df.columns):
+        return
+
+    figure.add_trace(
+        go.Scatter(
+            x=forecast_df["date"],
+            y=forecast_df["upper_bound"],
+            mode="lines",
+            line={"width": 0},
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    )
+    figure.add_trace(
+        go.Scatter(
+            x=forecast_df["date"],
+            y=forecast_df["lower_bound"],
+            mode="lines",
+            line={"width": 0},
+            fill="tonexty",
+            fillcolor=fill_color,
+            hoverinfo="skip",
+            name=name,
+        )
+    )
 

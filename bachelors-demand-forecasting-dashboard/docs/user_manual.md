@@ -9,6 +9,14 @@ This dashboard helps SME users upload sales data, clean it, review data quality,
 Open a terminal in the project folder and run:
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Then start the dashboard:
+
+```bash
 streamlit run app.py
 ```
 
@@ -53,14 +61,17 @@ The Data Quality tab explains how the uploaded data was cleaned. It shows:
 - Original row count.
 - Final cleaned row count.
 - Duplicate rows removed.
+- Unique rows removed because of invalid dates, invalid revenue, or negative revenue.
 - Invalid date rows removed.
 - Missing or invalid revenue rows removed.
 - Negative revenue rows removed.
+- Invalid transaction values that were set to zero.
+- Negative transaction values that were set to zero.
 - Missing values per original column.
 - Cleaned date range.
 - Cleaned and filtered data previews.
 
-Use this tab to confirm that the dataset is suitable before interpreting KPIs and forecasts.
+Use this tab to confirm that the dataset is suitable before interpreting KPIs and forecasts. The total removed-row metric counts unique removed rows, while the issue-specific counters help explain why those rows were flagged.
 
 ## Forecasting Tab
 
@@ -116,18 +127,27 @@ These files can be opened in Excel, Google Sheets, or other reporting tools.
 
 1. Start with the sample dataset.
 2. Keep default column mappings.
-3. Review the Overview tab.
-4. Open Data Quality and explain removed or validated rows.
+3. Review the Data Quality tab and explain removed rows plus transaction corrections.
+4. Review the Overview tab and describe the KPI cards.
 5. Run Moving Average with a 7-period window.
-6. Compare with Exponential Smoothing.
-7. Open Anomaly Detection and adjust the threshold.
-8. Export the results.
+6. Compare it with Exponential Smoothing and discuss MAE and MAPE.
+7. Open Anomaly Detection and adjust the threshold to show sensitivity.
+8. Export the results and explain how they could support a manager's decision-making.
 
 ## Common Issues
 
 - If the CSV does not load, check that it is a valid comma-separated file.
 - If dates are removed, check that the selected date column contains parseable dates.
 - If revenue rows are removed, check for missing, text-based, or negative revenue values.
+- If transaction values are corrected to zero, check for text entries, blanks, or negative values in the selected transactions column.
 - If MAPE is unavailable, the test set likely has only zero actual revenue values.
 - If Exponential Smoothing shows a warning, use Moving Average or provide more historical data.
+
+## Running Tests
+
+To verify the project before submission, activate the virtual environment and run:
+
+```bash
+pytest
+```
 

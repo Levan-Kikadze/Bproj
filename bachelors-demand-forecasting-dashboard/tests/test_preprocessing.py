@@ -97,3 +97,43 @@ def test_aggregation_daily_weekly_and_monthly():
     assert weekly.loc[weekly["date"] == pd.Timestamp("2024-01-01"), "revenue"].iloc[0] == 250
     assert monthly.loc[monthly["date"] == pd.Timestamp("2024-01-01"), "transactions"].iloc[0] == 22
 
+
+def test_preprocessing_preserves_extra_event_columns():
+    raw_df = pd.DataFrame(
+        {
+            "date": ["2024-01-01", "2024-01-02"],
+            "revenue": [100, 120],
+            "promotion_active": [1, 0],
+            "holiday_flag": [0, 1],
+        }
+    )
+
+    cleaned_df, _ = clean_sales_data(
+        raw_df,
+        date_col="date",
+        revenue_col="revenue",
+        extra_cols=["promotion_active", "holiday_flag"],
+    )
+
+    assert {"promotion_active", "holiday_flag"}.issubset(cleaned_df.columns)
+
+
+def test_aggregation_keeps_event_columns_with_max_signal():
+    cleaned_df = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2024-01-01", "2024-01-01", "2024-01-02"]),
+            "revenue": [100, 50, 200],
+            "promotion_active": [0, 1, 0],
+            "holiday_flag": [0, 0, 1],
+        }
+    )
+
+    aggregated = aggregate_sales_data(
+        cleaned_df,
+        frequency="Daily",
+        event_columns=["promotion_active", "holiday_flag"],
+    )
+
+    assert aggregated.loc[aggregated["date"] == pd.Timestamp("2024-01-01"), "promotion_active"].iloc[0] == 1
+    assert aggregated.loc[aggregated["date"] == pd.Timestamp("2024-01-02"), "holiday_flag"].iloc[0] == 1
+

@@ -1,24 +1,37 @@
 # AI-Driven Demand and Revenue Forecasting Dashboard for SMEs
 
-This project is a Streamlit dashboard for small and medium-sized enterprises that want an interpretable way to analyze sales data, forecast future demand/revenue, evaluate forecast accuracy, and detect unusual sales behavior.
+## Project Summary
 
-The focus is a reliable bachelor-project MVP: simple, explainable methods; clean data handling; useful visualizations; and exportable results.
+This project is a Streamlit dashboard for small and medium-sized enterprises that need an interpretable, practical way to validate sales data, monitor business KPIs, forecast future demand and revenue, and detect unusual behavior.
 
-## Features
+The implementation focuses on explainability and a clear evaluation story rather than on complex black-box modeling. The dashboard includes:
+
+- modular and readable Python code,
+- explainable statistical methods instead of opaque models,
+- transparent data cleaning and reporting,
+- useful visual outputs for a live demo,
+- automated tests for the main business logic.
+
+## Core Features
 
 - CSV upload with raw data preview.
-- Flexible column mapping for date, revenue, optional transactions, and optional categorical filters.
-- Automatic preprocessing for duplicates, invalid dates, invalid revenue, negative revenue, missing values, and date sorting.
+- Flexible column mapping for date, revenue, optional transactions, and optional business dimensions.
+- Optional holiday and promotion column mapping for forecast features.
+- Preprocessing that removes duplicates, invalid dates, invalid revenue values, and negative revenue rows.
+- Explicit reporting of unique removed rows and transaction values that were normalized to zero.
 - Daily, weekly, and monthly aggregation.
-- KPI cards for total revenue, average revenue, maximum revenue, minimum revenue, total transactions, average order value, and latest period-over-period growth.
-- Interactive Plotly charts for revenue trends, growth rates, categorical revenue breakdowns, actual vs predicted revenue, and anomaly highlighting.
-- Forecasting with Moving Average and Exponential Smoothing.
-- Chronological 80/20 train/test split with MAE and MAPE evaluation.
-- Rolling z-score anomaly detection with configurable window and threshold.
-- CSV downloads for cleaned aggregated data, forecast results, and anomaly results.
-- Pytest tests for preprocessing, forecasting, and anomaly detection.
+- KPI cards for total revenue, average revenue, maximum revenue, minimum revenue, transactions, average order value, and latest growth.
+- Interactive Plotly charts for revenue trend, growth, breakdown by dimension, forecast output, and anomalies.
+- Forecasting with Moving Average, Exponential Smoothing, and Linear Regression with calendar features.
+- Multi-model forecast comparison in the same UI.
+- Confidence intervals for Exponential Smoothing and Linear Regression.
+- Segment-level forecast comparison by product, store, or another categorical dimension.
+- Chronological 80/20 train/test evaluation with MAE and MAPE.
+- Rolling z-score anomaly detection with configurable sensitivity.
+- CSV exports for cleaned aggregated data, forecast outputs, and anomaly results.
+- Pytest regression coverage for preprocessing, forecasting, and anomaly detection.
 
-## Technologies
+## Technology Stack
 
 - Python
 - Streamlit
@@ -29,34 +42,37 @@ The focus is a reliable bachelor-project MVP: simple, explainable methods; clean
 - statsmodels
 - pytest
 
-## Setup
+## Local Installation
 
 Use Python 3.10 or newer.
 
 ```bash
-cd /Users/levankikadze/Desktop/Bproj/Bproj/bachelors-demand-forecasting-dashboard
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Run the App
+## Running the Application
+
+From the project folder:
 
 ```bash
 streamlit run app.py
 ```
 
-If no CSV is uploaded, the app automatically loads `sample_data/sample_sales_data.csv` for demonstration.
+If no CSV is uploaded, the app automatically loads `sample_data/sample_sales_data.csv`, which makes the dashboard demo-ready without extra setup.
 
-## Run Tests
+## Running the Tests
+
+From the project folder with the virtual environment activated:
 
 ```bash
-python -m pytest
+pytest
 ```
 
-## Expected CSV Format
+## Expected Input Data
 
-The app accepts flexible column names because the user maps columns in the sidebar. A typical CSV should contain:
+The dashboard supports flexible column names because the user maps columns in the sidebar. A typical CSV can look like this:
 
 ```csv
 date,revenue,transactions,product_category,store_id,product_id
@@ -65,62 +81,88 @@ date,revenue,transactions,product_category,store_id,product_id
 
 Required fields:
 
-- Date column: any parseable date format.
-- Revenue column: numeric values.
+- Date column with parseable date values.
+- Revenue column with numeric values.
 
 Optional fields:
 
-- Transactions column: numeric order or transaction count.
-- Categorical filters: product category, store ID, product ID, region, channel, or similar fields.
+- Transactions column with numeric order or transaction counts.
+- Holiday indicator column with binary or yes/no values.
+- Promotion indicator column with binary or yes/no values.
+- Categorical dimensions such as product category, store, product, region, or sales channel.
 
-## Forecasting Methods
+## Methodology Overview
 
-### Moving Average
+### Preprocessing
 
-The Moving Average model predicts each future value using the average of the most recent observed values. It is simple, transparent, and useful as a baseline for stable sales patterns.
+The preprocessing pipeline standardizes selected columns, removes duplicate rows, converts date and revenue values, filters invalid observations, sorts the data chronologically, and reports the cleaning decisions to the user. Invalid or negative transaction values are normalized to zero and surfaced in the Data Quality tab so KPI outputs remain transparent.
 
-### Exponential Smoothing
+### Forecasting
 
-Exponential Smoothing uses statsmodels to weight recent observations more heavily than older observations. The dashboard supports an additive trend and optional additive seasonality when enough training observations are available.
+Three interpretable forecasting methods are included:
 
-### Evaluation
+- Moving Average as a simple baseline.
+- Exponential Smoothing for trend-aware forecasting, with optional seasonality when enough data exists.
+- Linear Regression with time trend, calendar effects, built-in holiday flags, and optional uploaded holiday/promotion indicators.
 
-The data is split chronologically:
+The evaluation uses a chronological train/test split:
 
-- First 80%: training set.
-- Last 20%: test set.
+- first 80% for training,
+- last 20% for testing.
 
-The app reports:
+Reported metrics:
 
-- MAE: average absolute forecast error.
-- MAPE: average percentage error, ignoring test rows where actual revenue is zero.
+- MAE: mean absolute error.
+- MAPE: mean absolute percentage error, excluding test rows where actual revenue is zero.
 
-## Anomaly Detection
+The Forecasting tab can run several models at once, compare their MAE and MAPE, show prediction intervals where available, and compare future forecasts across major product or store segments.
 
-The dashboard uses rolling z-score anomaly detection:
+### Anomaly Detection
 
-1. Calculate historical rolling mean.
-2. Calculate historical rolling standard deviation.
-3. Compare the current value against the rolling baseline.
-4. Flag rows where the absolute z-score exceeds the selected threshold.
+The dashboard applies rolling z-score anomaly detection:
 
-This method is explainable and works well for demo-ready sales monitoring, but it is sensitive to the chosen rolling window and threshold.
+1. Build a historical rolling baseline from previous observations.
+2. Compare the current revenue value to that baseline.
+3. Flag values whose absolute z-score exceeds the selected threshold.
+
+This approach is easy to explain during a presentation and appropriate for an SME-focused decision-support prototype.
+
+## Recommended Demo Narrative
+
+1. Start with the sample dataset so the app opens with valid data immediately.
+2. Show the raw preview and column mapping.
+3. Open the Data Quality tab and explain what was removed or normalized.
+4. Present the KPI cards and revenue trend.
+5. Compare Moving Average, Exponential Smoothing, and Linear Regression on the same holdout split.
+6. Show confidence intervals and explain why the linear regression coefficients are interpretable.
+7. Compare a store or product segment forecast using the segment comparison section.
+8. Show the anomaly view and explain threshold sensitivity.
+9. Export the outputs.
 
 ## Limitations
 
-- Forecasting is univariate and uses only historical revenue.
-- External drivers such as promotions, holidays, weather, and marketing spend are not modeled.
-- Missing dates are filled with zero revenue for forecasting, which may not be appropriate for every business.
-- Exponential Smoothing can fail on very short or irregular datasets; the app catches these errors and shows a warning.
-- MAPE is unavailable when all actual test values are zero.
-- The app is not a real-time production system and does not include authentication.
+- Moving Average and Exponential Smoothing remain univariate and rely only on historical revenue.
+- Linear Regression includes calendar effects plus optional holiday and promotion indicators, but richer external drivers such as weather, price changes, and marketing spend are still not modeled.
+- Missing dates are filled with zero revenue for forecasting to preserve a regular time series.
+- Exponential Smoothing can be unstable on short or irregular histories, so the app returns warnings instead of crashing.
+- Linear Regression can underperform on datasets whose variation is not well explained by calendar effects or uploaded event flags.
+- MAPE is unavailable when every valid test-period actual value is zero.
+- The project is designed for interactive analysis, not real-time production deployment.
 
 ## Future Improvements
 
-- Add holiday and promotion calendars.
-- Add product-level or store-level forecast comparisons.
-- Add confidence intervals.
-- Add more interpretable models such as linear regression with calendar features.
-- Add automated model comparison across multiple forecast methods.
-- Add deployment documentation for Streamlit Community Cloud or a cloud VM.
+- Add custom holiday calendars for different countries or business-specific events.
+- Add richer causal features such as price, weather, and marketing spend.
+- Add automated model selection and segment-specific export bundles.
+- Add additional interpretable models for intermittent demand, such as Croston-style baselines.
+- Add deployment instructions for Streamlit Community Cloud or a cloud VM.
+- Extend evaluation with cross-validation style backtesting across several forecast origins.
+
+## Additional Project Documents
+
+- `docs/bachelor_report.md`
+- `docs/final_eval_rubric_mapping.md`
+- `docs/technical_documentation.md`
+- `docs/user_manual.md`
+- `docs/submission_checklist.md`
 

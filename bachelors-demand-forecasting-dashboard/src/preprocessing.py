@@ -42,13 +42,14 @@ def clean_sales_data(
     revenue_col: str,
     transactions_col: str | None = None,
     category_cols: list[str] | None = None,
+    extra_cols: list[str] | None = None,
     remove_negative_revenue: bool = True,
 ) -> tuple[pd.DataFrame, DataQualityReport]:
     """Clean uploaded sales data and return a standardized DataFrame.
 
     The returned DataFrame uses standardized names:
     `date`, `revenue`, and, if selected, `transactions`.
-    Selected categorical columns are preserved with their original names.
+    Selected categorical columns and extra columns are preserved with their original names.
     """
     if raw_df.empty:
         report = DataQualityReport(
@@ -71,7 +72,9 @@ def clean_sales_data(
         _validate_required_columns(raw_df, [transactions_col])
 
     category_cols = category_cols or []
+    extra_cols = extra_cols or []
     valid_category_cols = [col for col in category_cols if col in raw_df.columns]
+    valid_extra_cols = [col for col in extra_cols if col in raw_df.columns]
 
     original_row_count = len(raw_df)
     missing_values = raw_df.isna().sum().astype(int).to_dict()
@@ -80,7 +83,7 @@ def clean_sales_data(
     duplicates_removed = original_row_count - len(deduped)
 
     selected_columns = _unique_preserving_order(
-        [date_col, revenue_col, transactions_col, *valid_category_cols]
+        [date_col, revenue_col, transactions_col, *valid_category_cols, *valid_extra_cols]
     )
     cleaned = deduped[selected_columns].copy()
 
@@ -137,16 +140,21 @@ def aggregate_sales_data(
     cleaned_df: pd.DataFrame,
     frequency: str = "Daily",
     group_columns: list[str] | None = None,
+    event_columns: list[str] | None = None,
 ) -> pd.DataFrame:
     """Aggregate cleaned sales data by daily, weekly, or monthly periods."""
     if cleaned_df.empty:
         columns = ["date", "revenue"]
         if "transactions" in cleaned_df.columns:
             columns.append("transactions")
+        for column in event_columns or []:
+            if column in cleaned_df.columns and column not in columns:
+                columns.append(column)
         return pd.DataFrame(columns=columns)
 
     _validate_required_columns(cleaned_df, ["date", "revenue"])
     group_columns = [col for col in (group_columns or []) if col in cleaned_df.columns]
+    event_columns = [col for col in (event_columns or []) if col in cleaned_df.columns and col not in group_columns]
 
     working = cleaned_df.copy()
     working["date"] = pd.to_datetime(working["date"], errors="coerce")
@@ -156,6 +164,8 @@ def aggregate_sales_data(
     aggregation_map: dict[str, str] = {"revenue": "sum"}
     if "transactions" in working.columns:
         aggregation_map["transactions"] = "sum"
+    for column in event_columns:
+        aggregation_map[column] = "max"
 
     grouped = (
         working.groupby(["date", *group_columns], dropna=False, as_index=False)
