@@ -18,18 +18,16 @@ class DataQualityReport:
     invalid_date_rows_removed: int
     invalid_revenue_rows_removed: int
     negative_revenue_rows_removed: int
+    invalid_transaction_rows_normalized: int
+    negative_transaction_rows_clipped: int
     missing_values_by_column: dict[str, int]
     date_range_start: pd.Timestamp | None
     date_range_end: pd.Timestamp | None
 
     @property
     def total_rows_removed_for_invalid_data(self) -> int:
-        """Rows removed for invalid date, invalid revenue, or negative revenue."""
-        return (
-            self.invalid_date_rows_removed
-            + self.invalid_revenue_rows_removed
-            + self.negative_revenue_rows_removed
-        )
+        """Unique rows removed for invalid date, invalid revenue, or negative revenue."""
+        return max(self.original_row_count - self.duplicates_removed - self.final_row_count, 0)
 
     def to_dict(self) -> dict[str, Any]:
         """Return the report as a plain dictionary for display or testing."""
@@ -60,6 +58,8 @@ def clean_sales_data(
             invalid_date_rows_removed=0,
             invalid_revenue_rows_removed=0,
             negative_revenue_rows_removed=0,
+            invalid_transaction_rows_normalized=0,
+            negative_transaction_rows_clipped=0,
             missing_values_by_column={},
             date_range_start=None,
             date_range_end=None,
@@ -91,9 +91,14 @@ def clean_sales_data(
 
     cleaned["date"] = pd.to_datetime(cleaned["date"], errors="coerce")
     cleaned["revenue"] = pd.to_numeric(cleaned["revenue"], errors="coerce")
+    invalid_transaction_mask = pd.Series(False, index=cleaned.index, dtype=bool)
+    negative_transaction_mask = pd.Series(False, index=cleaned.index, dtype=bool)
     if "transactions" in cleaned.columns:
-        cleaned["transactions"] = pd.to_numeric(cleaned["transactions"], errors="coerce")
-        cleaned["transactions"] = cleaned["transactions"].fillna(0)
+        raw_transactions = cleaned["transactions"]
+        normalized_transactions = pd.to_numeric(raw_transactions, errors="coerce")
+        invalid_transaction_mask = raw_transactions.notna() & normalized_transactions.isna()
+        negative_transaction_mask = normalized_transactions < 0
+        cleaned["transactions"] = normalized_transactions.fillna(0)
 
     invalid_date_mask = cleaned["date"].isna()
     invalid_revenue_mask = cleaned["revenue"].isna()
@@ -119,6 +124,8 @@ def clean_sales_data(
         negative_revenue_rows_removed=int((negative_revenue_mask & ~invalid_revenue_mask).sum())
         if remove_negative_revenue
         else 0,
+        invalid_transaction_rows_normalized=int(invalid_transaction_mask.sum()),
+        negative_transaction_rows_clipped=int(negative_transaction_mask.sum()),
         missing_values_by_column=missing_values,
         date_range_start=final_df["date"].min() if not final_df.empty else None,
         date_range_end=final_df["date"].max() if not final_df.empty else None,

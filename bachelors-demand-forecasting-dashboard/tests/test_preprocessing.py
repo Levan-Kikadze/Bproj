@@ -25,6 +25,7 @@ def test_preprocessing_removes_invalid_dates_missing_revenue_and_negative_revenu
     assert report.invalid_date_rows_removed == 1
     assert report.invalid_revenue_rows_removed == 1
     assert report.negative_revenue_rows_removed == 1
+    assert report.total_rows_removed_for_invalid_data == 3
     assert cleaned_df.iloc[0]["revenue"] == 100
 
 
@@ -40,6 +41,43 @@ def test_preprocessing_removes_duplicate_rows():
 
     assert len(cleaned_df) == 2
     assert report.duplicates_removed == 1
+
+
+def test_preprocessing_counts_unique_removed_rows_when_issues_overlap():
+    raw_df = pd.DataFrame(
+        {
+            "date": ["not-a-date"],
+            "revenue": [None],
+        }
+    )
+
+    _, report = clean_sales_data(raw_df, date_col="date", revenue_col="revenue")
+
+    assert report.invalid_date_rows_removed == 1
+    assert report.invalid_revenue_rows_removed == 1
+    assert report.total_rows_removed_for_invalid_data == 1
+
+
+def test_preprocessing_reports_transaction_values_normalized_to_zero():
+    raw_df = pd.DataFrame(
+        {
+            "date": ["2024-01-01", "2024-01-02", "2024-01-03"],
+            "revenue": [100, 120, 140],
+            "transactions": ["bad", -5, None],
+        }
+    )
+
+    cleaned_df, report = clean_sales_data(
+        raw_df,
+        date_col="date",
+        revenue_col="revenue",
+        transactions_col="transactions",
+    )
+
+    assert cleaned_df["transactions"].tolist() == [0.0, 0.0, 0.0]
+    assert report.invalid_transaction_rows_normalized == 1
+    assert report.negative_transaction_rows_clipped == 1
+    assert report.missing_values_by_column["transactions"] == 1
 
 
 def test_aggregation_daily_weekly_and_monthly():

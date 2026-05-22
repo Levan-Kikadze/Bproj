@@ -267,6 +267,18 @@ def render_data_quality_tab(
         "Negative Revenue Removed",
         format_number(quality_report.negative_revenue_rows_removed),
     )
+    st.caption("Rows Removed counts unique rows removed after deduplication. Issue counts below can overlap.")
+
+    if "transactions" in cleaned_df.columns:
+        transaction_columns = st.columns(2)
+        transaction_columns[0].metric(
+            "Invalid Transactions Set to 0",
+            format_number(quality_report.invalid_transaction_rows_normalized),
+        )
+        transaction_columns[1].metric(
+            "Negative Transactions Set to 0",
+            format_number(quality_report.negative_transaction_rows_clipped),
+        )
 
     if quality_report.date_range_start is not None and quality_report.date_range_end is not None:
         st.info(
