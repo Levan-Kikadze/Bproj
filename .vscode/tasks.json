@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Streamlit Dashboard",
+			"type": "shell",
+			"command": "cd bachelors-demand-forecasting-dashboard && /Users/levankikadze/Desktop/Bproj/Bproj/bachelors-demand-forecasting-dashboard/.venv/bin/python -m streamlit run app.py --server.headless true --server.port 8501",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Run Pytest",
+			"type": "shell",
+			"command": "cd bachelors-demand-forecasting-dashboard && /Users/levankikadze/Desktop/Bproj/Bproj/bachelors-demand-forecasting-dashboard/.venv/bin/python -m pytest -q",
+			"isBackground": false,
+			"group": "test"
+		}
+	]
+}
