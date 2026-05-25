@@ -42,6 +42,13 @@ The implementation focuses on explainability and a clear evaluation story rather
 - statsmodels
 - pytest
 
+## Validated Environment
+
+The project is documented as supporting Python 3.10 or newer.
+
+For the exact dependency versions used in the latest validated local snapshot, see `docs/reproducibility_snapshot.md`.
+If you want the same package set that was used for that validation pass, use `requirements-validated.txt`.
+
 ## Local Installation
 
 Use Python 3.10 or newer.
@@ -62,12 +69,20 @@ streamlit run app.py
 
 If no CSV is uploaded, the app automatically loads `sample_data/sample_sales_data.csv`, which makes the dashboard demo-ready without extra setup.
 
+The sidebar also includes additional bundled demo datasets for targeted scenarios such as data quality issues, holiday and promotion forecasting, and anomaly detection with missing periods. See `sample_data/README.md` for a quick guide.
+
 ## Running the Tests
 
 From the project folder with the virtual environment activated:
 
 ```bash
 pytest
+```
+
+The latest local validation snapshot also passed with:
+
+```bash
+.venv/bin/pytest -q
 ```
 
 ## Expected Input Data
@@ -162,7 +177,10 @@ This approach is easy to explain during a presentation and appropriate for an SM
 
 - `docs/bachelor_report.md`
 - `docs/final_eval_rubric_mapping.md`
+- `docs/final_presentation_outline.md`
+- `docs/reproducibility_snapshot.md`
 - `docs/technical_documentation.md`
 - `docs/user_manual.md`
+- `docs/viva_cheat_sheet.md`
 - `docs/submission_checklist.md`
 

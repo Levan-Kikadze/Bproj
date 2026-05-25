@@ -4,6 +4,12 @@
 
 This dashboard helps SME users upload sales data, clean it, review data quality, monitor revenue KPIs, forecast future revenue, detect unusual sales trends, and export results.
 
+The app now also includes:
+
+- a built-in `Guide` tab with a full explanation of charts, data, and interpretation,
+- small `i` help popovers next to the main sections inside the app,
+- help text on important sidebar controls and forecasting options.
+
 ## Starting the App
 
 Open a terminal in the project folder and run:
@@ -22,19 +28,26 @@ streamlit run app.py
 
 The app opens in a browser. If you do not upload a CSV file, the dashboard uses the bundled sample dataset.
 
+If you are new to the app, open the `Guide` tab before working with real data.
+
 ## Uploading Data
 
-1. Use the sidebar file uploader to select a CSV file.
-2. Confirm that the raw preview looks correct.
-3. Select the date column.
-4. Select the revenue column.
-5. Optionally select a transactions column.
-6. Optionally select filter columns such as product category, store, or product ID.
-7. Choose the aggregation frequency: Daily, Weekly, or Monthly.
+1. In `Dataset source`, choose either a bundled demo dataset or `Upload CSV`.
+2. If you upload a file, use the file uploader to select your CSV.
+3. Confirm that the raw preview looks correct.
+4. Select the date column.
+5. Select the revenue column.
+6. Optionally select transactions, holiday, and promotion columns.
+7. Optionally select filter columns such as product category, store, or product ID.
+8. Choose the aggregation frequency: Daily, Weekly, or Monthly.
+
+Use the small `i` popovers in the app whenever you are unsure how to read a section.
 
 ## Using Filters
 
 If filter columns are selected, the sidebar shows filter controls. Select the categories, stores, or products you want to analyze. If all values are selected, the dashboard analyzes the full cleaned dataset.
+
+Remember that filters change all KPIs, charts, forecasts, anomalies, and exports.
 
 ## Overview Tab
 
@@ -53,6 +66,8 @@ It also shows:
 - Revenue trend over time.
 - Revenue growth rate.
 - Revenue breakdown by selected category, store, or product.
+
+Use the `i` help popovers beside the chart sections for plain-language interpretation guidance.
 
 ## Data Quality Tab
 
@@ -77,23 +92,28 @@ Use this tab to confirm that the dataset is suitable before interpreting KPIs an
 
 The Forecasting tab lets you choose:
 
-- Moving Average.
-- Exponential Smoothing.
-- Future forecast horizon: 7, 14, or 30 periods.
-
-For Moving Average, choose the rolling window size.
-
-For Exponential Smoothing, choose whether to use trend and optional seasonality.
+- one or more models to evaluate,
+- which model should be shown in detailed view,
+- future forecast horizon,
+- confidence level,
+- optional segment comparison,
+- moving average window,
+- trend and optional seasonality for Exponential Smoothing.
 
 The tab reports:
 
+- Model comparison table.
 - MAE: average absolute forecast error.
 - MAPE: average percentage forecast error, excluding zero actual revenue rows.
 - Actual vs predicted revenue chart.
 - Test forecast table.
 - Future forecast table.
+- Linear Regression coefficients, when that model is selected.
+- Segment comparison output, when enabled.
 
 If the dataset is too short or the model cannot be fitted, the app shows a warning instead of stopping.
+
+New users should start with the model comparison table, then inspect the forecast chart, then read the test and future forecast tables.
 
 ## Anomaly Detection Tab
 
@@ -113,6 +133,8 @@ Outputs:
 
 Higher thresholds detect fewer anomalies. Lower thresholds detect more anomalies.
 
+Use the `i` help beside the anomaly sections to understand what counts as unusual behavior and how to interpret the red markers.
+
 ## Export Tab
 
 The Export tab provides downloads for:
@@ -131,8 +153,9 @@ These files can be opened in Excel, Google Sheets, or other reporting tools.
 4. Review the Overview tab and describe the KPI cards.
 5. Run Moving Average with a 7-period window.
 6. Compare it with Exponential Smoothing and discuss MAE and MAPE.
-7. Open Anomaly Detection and adjust the threshold to show sensitivity.
-8. Export the results and explain how they could support a manager's decision-making.
+7. Switch to Linear Regression or segment comparison if you want to demonstrate deeper functionality.
+8. Open Anomaly Detection and adjust the threshold to show sensitivity.
+9. Export the results and explain how they could support a manager's decision-making.
 
 ## Common Issues
 

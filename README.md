@@ -45,9 +45,13 @@ pytest
 
 - `bachelors-demand-forecasting-dashboard/docs/bachelor_report.md`: aligned bachelor report draft based on the implemented system.
 - `bachelors-demand-forecasting-dashboard/docs/final_eval_rubric_mapping.md`: committee-rubric mapping and final-evaluation preparation notes.
+- `bachelors-demand-forecasting-dashboard/docs/final_presentation_outline.md`: slide-by-slide defense structure, demo plan, and backup checklist.
 - `bachelors-demand-forecasting-dashboard/README.md`: main technical and usage overview.
+- `bachelors-demand-forecasting-dashboard/requirements-validated.txt`: frozen package snapshot matching the latest validated local environment.
+- `bachelors-demand-forecasting-dashboard/docs/reproducibility_snapshot.md`: exact validated environment snapshot for the latest local verification.
 - `bachelors-demand-forecasting-dashboard/docs/technical_documentation.md`: architecture, methodology, and implementation details.
 - `bachelors-demand-forecasting-dashboard/docs/user_manual.md`: end-user instructions and demo flow.
+- `bachelors-demand-forecasting-dashboard/docs/viva_cheat_sheet.md`: short-answer defense preparation notes and key numbers to memorize.
 - `bachelors-demand-forecasting-dashboard/docs/submission_checklist.md`: step-by-step plan for maximizing marks, final QA, demo preparation, and viva preparation.
 
 ## What This Project Demonstrates
