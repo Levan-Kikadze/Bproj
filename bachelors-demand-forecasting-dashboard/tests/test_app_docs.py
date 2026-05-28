@@ -14,16 +14,6 @@ def test_dashboard_guide_file_exists_and_loads() -> None:
 
 def test_defense_and_reproducibility_docs_exist() -> None:
     expected_docs = {
-        PROJECT_ROOT / "docs" / "final_presentation_outline.md": [
-            "# Final Presentation Outline",
-            "## Slide-by-Slide Plan",
-            "## Live Demo Script",
-        ],
-        PROJECT_ROOT / "docs" / "viva_cheat_sheet.md": [
-            "# Viva Cheat Sheet",
-            "## Numbers to Memorize",
-            "## Short Answers for Likely Questions",
-        ],
         PROJECT_ROOT / "docs" / "reproducibility_snapshot.md": [
             "# Reproducibility Snapshot",
             "## Validated Environment",

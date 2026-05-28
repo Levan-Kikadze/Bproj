@@ -162,19 +162,6 @@ The dashboard applies rolling z-score anomaly detection:
 
 This approach is easy to explain during a presentation and appropriate for an SME-focused decision-support prototype.
 
-## Recommended Demo Narrative
-
-1. Start with the sample dataset so the app opens with valid data immediately.
-2. Show the raw preview and column mapping, and explain that bad date or revenue mapping would now trigger warnings before the analysis continues.
-3. Open the Data Quality tab and explain why an SME should validate trust in the data before trusting the KPI or forecast output.
-4. Present the KPI cards and revenue trend as the current-state business snapshot.
-5. Open the Forecasting tab and answer the key planning question: what should demand or revenue look like next week or next month?
-6. Compare Moving Average, Exponential Smoothing, and Linear Regression on the same holdout split, then show the future forecast table and confidence intervals.
-7. Translate the forecast into a business action such as inventory planning, staffing, or target setting.
-8. Compare a store or product segment forecast using the segment comparison section if you need a richer decision story.
-9. Show the anomaly view and explain threshold sensitivity.
-10. Export the outputs.
-
 ## Limitations
 
 - Moving Average and Exponential Smoothing remain univariate and rely only on historical revenue.
@@ -194,14 +181,11 @@ This approach is easy to explain during a presentation and appropriate for an SM
 - Add deployment instructions for Streamlit Community Cloud or a cloud VM.
 - Extend evaluation with cross-validation style backtesting across several forecast origins.
 
-## Additional Project Documents
+## Supporting Documentation
 
 - `docs/bachelor_report.md`
-- `docs/final_eval_rubric_mapping.md`
-- `docs/final_presentation_outline.md`
-- `docs/reproducibility_snapshot.md`
 - `docs/technical_documentation.md`
 - `docs/user_manual.md`
-- `docs/viva_cheat_sheet.md`
-- `docs/submission_checklist.md`
+- `docs/dashboard_help_guide.md`
+- `docs/reproducibility_snapshot.md`
 

@@ -176,3 +176,6 @@ Temporary Items
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local-only bachelor project prep notes
+bachelors-demand-forecasting-dashboard/.local-notes/

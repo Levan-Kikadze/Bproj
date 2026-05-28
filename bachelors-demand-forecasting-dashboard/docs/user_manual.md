@@ -4,7 +4,7 @@
 
 This dashboard helps SME users upload sales data, clean it, review data quality, monitor revenue KPIs, forecast future revenue, detect unusual sales trends, and export results.
 
-The app now also includes:
+The app also includes:
 
 - a built-in `Guide` tab with a full explanation of charts, data, and interpretation,
 - small `i` help popovers next to the main sections inside the app,
@@ -13,13 +13,13 @@ The app now also includes:
 ## Business Questions This Dashboard Answers
 
 1. Can I trust this dataset before I show numbers to anyone?
-	Use the Data Quality tab. It shows what was removed, what was normalized, and whether the cleaned data still looks usable.
+   Use the Data Quality tab. It shows what was removed, what was normalized, and whether the cleaned data still looks usable.
 2. What is happening in the business right now?
-	Use the Overview tab. It summarizes revenue level, growth, and segment contribution so you can describe current performance quickly.
+   Use the Overview tab. It summarizes revenue level, growth, and segment contribution so you can describe current performance quickly.
 3. What should I expect next week or next month?
-	Use the Forecasting tab. Compare the models, inspect the future forecast table, and use the output to support inventory, staffing, or target-setting discussions.
+   Use the Forecasting tab. Compare the models, inspect the future forecast table, and use the output to support inventory, staffing, or target-setting discussions.
 4. Which periods need explanation before I act?
-	Use the Anomaly Detection tab. It highlights unusual spikes or drops that may reflect promotions, outages, data issues, or real business events.
+   Use the Anomaly Detection tab. It highlights unusual spikes or drops that may reflect promotions, outages, data issues, or real business events.
 
 ## Starting the App
 
@@ -54,7 +54,7 @@ If you are new to the app, open the `Guide` tab before working with real data.
 
 Use the small `i` popovers in the app whenever you are unsure how to read a section.
 
-The app now warns you earlier when an uploaded CSV has no obvious date or revenue column, when the sampled date or revenue values do not parse cleanly, when the same column is selected for both date and revenue, or when the file has headers but no data rows.
+The app warns you when an uploaded CSV has no obvious date or revenue column, when the sampled date or revenue values do not parse cleanly, when the same column is selected for both date and revenue, or when the file has headers but no data rows.
 
 ## Using Filters
 
@@ -166,19 +166,6 @@ The Export tab provides downloads for:
 
 These files can be opened in Excel, Google Sheets, or other reporting tools.
 
-## Recommended Demo Flow
-
-1. Start with the sample dataset.
-2. Keep default column mappings and point out that the app now warns earlier if the date or revenue mapping looks wrong.
-3. Review the Data Quality tab and explain removed rows plus transaction corrections before trusting the rest of the dashboard.
-4. Review the Overview tab and describe the KPI cards as the current-state business summary.
-5. Open the Forecasting tab and answer the main planning question: what should demand or revenue look like next?
-6. Run Moving Average with a 7-period window, compare it with Exponential Smoothing and Linear Regression, and discuss MAE and MAPE.
-7. Show the future forecast table and explain the business action it supports, such as inventory planning, staffing, or target setting.
-8. Switch to segment comparison if you want to demonstrate deeper functionality.
-9. Open Anomaly Detection and adjust the threshold to show sensitivity.
-10. Export the results and explain how they could support a manager's decision-making.
-
 ## Common Issues
 
 - If the CSV does not load, check that it is a valid comma-separated file.
@@ -192,11 +179,4 @@ These files can be opened in Excel, Google Sheets, or other reporting tools.
 - If MAPE is unavailable, the test set likely has only zero actual revenue values.
 - If Exponential Smoothing shows a warning, use Moving Average or provide more historical data.
 
-## Running Tests
-
-To verify the project before submission, activate the virtual environment and run:
-
-```bash
-pytest
-```
 

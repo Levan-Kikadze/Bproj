@@ -1,4 +1,4 @@
-# Bachelor Report Draft
+# Bachelor Report
 
 ## Project Title
 
@@ -358,14 +358,3 @@ This project delivers a practical and interpretable dashboard for SME sales anal
 The final implementation aligns with the project goal of building an accessible decision-support tool rather than an overly complex predictive platform. The use of modular Python code, transparent statistical methods, and automated tests makes the system technically coherent and academically defendable. The evaluation on the bundled sample dataset shows that the dashboard works end to end and produces measurable results that can be discussed critically.
 
 Overall, the project demonstrates that a focused, well-documented, and interpretable analytical system can provide meaningful value to SMEs while remaining realistic within the scope of a bachelor project. Its main contribution is not a new forecasting algorithm, but a practical workflow that helps a smaller business move from manual spreadsheet checking toward more transparent and data-backed short-term decisions.
-
-## 17. Report Completion Notes
-
-Before submitting the final thesis document, add the following items to this draft or to the university template version:
-
-- title page required by your university,
-- supervisor and student information,
-- screenshots from the dashboard tabs,
-- any institution-specific formatting requirements,
-- bibliography or references section if required,
-- appendix material such as sample CSV snippets or extra figures.
