@@ -1,5 +1,7 @@
 # Reproducibility Snapshot
 
+ForeSightSeer environment validation notes.
+
 ## Purpose
 
 This file records the exact local environment used for the latest validated project snapshot. The main `requirements.txt` keeps minimum compatible versions, while this file captures the concrete versions used during the current validation pass.

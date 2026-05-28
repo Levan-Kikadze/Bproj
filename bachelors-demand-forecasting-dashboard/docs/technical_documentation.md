@@ -1,4 +1,4 @@
-# Technical Documentation
+# ForeSightSeer: Technical Documentation
 
 ## Problem Statement
 

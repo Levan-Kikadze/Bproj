@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+from io import BytesIO
 from pathlib import Path
 
 import numpy as np
@@ -56,6 +58,15 @@ BUNDLED_DATASETS = {
         "file_name": "sample_sales_data_anomalies.csv",
         "description": "Irregular time series with gaps and clear spikes or drops for anomaly and missing-period demos.",
     },
+}
+
+DATE_COLUMN_KEYWORDS = ["date", "day", "period", "week", "month", "time"]
+REVENUE_COLUMN_KEYWORDS = ["revenue", "sales", "amount", "total", "income"]
+MAPPING_SAMPLE_SIZE = 5
+LIKELY_WRONG_DELIMITERS = {
+    ";": "semicolon",
+    "\t": "tab",
+    "|": "pipe",
 }
 
 HELP_TEXT = {
@@ -212,6 +223,269 @@ def help_file_uploader(label: str, help_text: str, *, container=st, **kwargs):
     return container.file_uploader(label, help=help_text, **kwargs)
 
 
+def first_non_empty_line(text: str) -> str | None:
+    """Return the first non-empty line from a text blob."""
+    for line in text.splitlines():
+        if line.strip():
+            return line
+    return None
+
+
+def parse_csv_header_line(header_line: str) -> list[str]:
+    """Parse a CSV header line into raw column names."""
+    try:
+        return next(csv.reader([header_line]))
+    except Exception:
+        return [part.strip() for part in header_line.split(",")]
+
+
+def build_duplicate_header_error(header_columns: list[str]) -> str | None:
+    """Return a blocking error when header names are duplicated."""
+    seen: dict[str, str] = {}
+    duplicates: set[str] = set()
+
+    for column in header_columns:
+        normalized = column.strip().lower()
+        label = column.strip()
+        if not normalized:
+            continue
+        if normalized in seen:
+            duplicates.add(seen[normalized])
+            duplicates.add(label or seen[normalized])
+            continue
+        seen[normalized] = label
+
+    if not duplicates:
+        return None
+
+    duplicate_labels = ", ".join(sorted(duplicates))
+    return (
+        "The uploaded CSV contains duplicate header names "
+        f"({duplicate_labels}). Rename them so each column is unique before uploading."
+    )
+
+
+def build_blank_header_error(header_columns: list[str]) -> str | None:
+    """Return a blocking error when the CSV header contains blank cells."""
+    blank_positions = [str(index) for index, column in enumerate(header_columns, start=1) if not column.strip()]
+    if not blank_positions:
+        return None
+
+    return (
+        "The uploaded CSV has blank header cells in column position(s) "
+        f"{', '.join(blank_positions)}. Fill in every header name before uploading."
+    )
+
+
+def build_wrong_delimiter_error(header_line: str, column_count: int) -> str | None:
+    """Return a blocking error when the file looks delimited but not comma-separated."""
+    if column_count != 1 or "," in header_line:
+        return None
+
+    for delimiter, label in LIKELY_WRONG_DELIMITERS.items():
+        if delimiter in header_line:
+            return (
+                f"The uploaded file looks {label}-separated instead of comma-separated. "
+                "Re-save it as a standard comma-separated CSV and upload it again."
+            )
+    return None
+
+
+def build_minimum_column_error(column_count: int) -> str | None:
+    """Return a blocking error when the parsed file cannot support required mapping."""
+    if column_count >= 2:
+        return None
+    return (
+        "The uploaded CSV produced fewer than two columns after parsing. "
+        "The dashboard needs at least one date column and one revenue column."
+    )
+
+
+def build_upload_structure_warnings(raw_df: pd.DataFrame) -> list[str]:
+    """Return non-blocking warnings for suspicious but still readable uploads."""
+    warnings: list[str] = []
+
+    unnamed_columns = [str(column) for column in raw_df.columns if str(column).startswith("Unnamed:")]
+    if unnamed_columns:
+        warnings.append(
+            "The uploaded CSV includes unnamed columns, which usually means the source spreadsheet had blank header cells or trailing separators."
+        )
+
+    empty_columns = [str(column) for column in raw_df.columns if raw_df[column].dropna().empty]
+    if empty_columns:
+        displayed_columns = ", ".join(empty_columns[:5])
+        suffix = "" if len(empty_columns) <= 5 else ", ..."
+        warnings.append(
+            f"These uploaded columns are completely empty: {displayed_columns}{suffix}. They will not help the analysis until they contain values."
+        )
+
+    return warnings
+
+
+def read_uploaded_csv_bytes(file_bytes: bytes) -> tuple[pd.DataFrame, list[str], str | None]:
+    """Parse uploaded CSV bytes and classify common upload failures."""
+    if not file_bytes or not file_bytes.strip():
+        return pd.DataFrame(), [], "The uploaded file is empty. Add a header row and at least one data row."
+
+    if b"\x00" in file_bytes:
+        return pd.DataFrame(), [], (
+            "The uploaded file contains binary characters and does not look like a plain-text CSV. "
+            "Export it again as a CSV file before uploading."
+        )
+
+    try:
+        file_text = file_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return pd.DataFrame(), [], (
+            "Could not decode the uploaded CSV as UTF-8 text. Re-save the file as UTF-8 CSV and try again."
+        )
+
+    header_line = first_non_empty_line(file_text)
+    if header_line is None:
+        return pd.DataFrame(), [], "The uploaded file is empty. Add a header row and at least one data row."
+
+    header_columns = parse_csv_header_line(header_line)
+    duplicate_header_error = build_duplicate_header_error(header_columns)
+    if duplicate_header_error:
+        return pd.DataFrame(), [], duplicate_header_error
+
+    blank_header_error = build_blank_header_error(header_columns)
+    if blank_header_error:
+        return pd.DataFrame(), [], blank_header_error
+
+    try:
+        raw_df = pd.read_csv(BytesIO(file_bytes), encoding="utf-8-sig")
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame(), [], "The uploaded file is empty. Add a header row and at least one data row."
+    except UnicodeDecodeError:
+        return pd.DataFrame(), [], (
+            "Could not decode the uploaded CSV as UTF-8 text. Re-save the file as UTF-8 CSV and try again."
+        )
+    except pd.errors.ParserError as exc:
+        return pd.DataFrame(), [], f"Could not parse the uploaded CSV because the rows are malformed: {exc}"
+    except Exception as exc:
+        return pd.DataFrame(), [], f"Could not read uploaded CSV: {exc}"
+
+    wrong_delimiter_error = build_wrong_delimiter_error(header_line, len(raw_df.columns))
+    if wrong_delimiter_error:
+        return pd.DataFrame(), [], wrong_delimiter_error
+
+    minimum_column_error = build_minimum_column_error(len(raw_df.columns))
+    if minimum_column_error:
+        return pd.DataFrame(), [], minimum_column_error
+
+    warnings = build_upload_column_warnings(raw_df)
+    warnings.extend(build_upload_structure_warnings(raw_df))
+    if raw_df.empty:
+        warnings.append("The uploaded file has headers but no data rows. Add at least one row with a date and revenue value.")
+
+    return raw_df, warnings, None
+
+
+def find_column_keyword_matches(columns: list[str], keywords: list[str]) -> list[str]:
+    """Return the columns whose names match any of the provided keywords."""
+    return [column for column in columns if any(keyword in column.lower() for keyword in keywords)]
+
+
+def build_upload_column_warnings(raw_df: pd.DataFrame) -> list[str]:
+    """Return upload-time warnings when required business columns are hard to identify."""
+    columns = list(raw_df.columns)
+    warnings: list[str] = []
+
+    if columns and not find_column_keyword_matches(columns, DATE_COLUMN_KEYWORDS):
+        warnings.append(
+            "No obvious date-like column name was detected. Upload a CSV with a real date field or map the correct date column before running forecasts."
+        )
+    if columns and not find_column_keyword_matches(columns, REVENUE_COLUMN_KEYWORDS):
+        warnings.append(
+            "No obvious revenue-like column name was detected. Choose the numeric sales or revenue column carefully before continuing."
+        )
+    return warnings
+
+
+def build_mapping_selection_error(date_col: str, revenue_col: str) -> str | None:
+    """Return a blocking error for invalid required-column selections."""
+    if date_col == revenue_col:
+        return "Date column and Revenue column must be different fields. Choose a real date field and a separate numeric revenue field."
+    return None
+
+
+def build_mapping_validation_warnings(
+    raw_df: pd.DataFrame,
+    *,
+    date_col: str,
+    revenue_col: str,
+    sample_size: int = MAPPING_SAMPLE_SIZE,
+) -> list[str]:
+    """Return column-mapping warnings based on sample parseability checks."""
+    warnings: list[str] = []
+
+    date_sample = raw_df[date_col].dropna().head(sample_size)
+    if date_sample.empty:
+        warnings.append(
+            f"The selected date column '{date_col}' is empty in the sampled rows. Choose a populated date field before continuing."
+        )
+    else:
+        parsed_dates = pd.to_datetime(date_sample, errors="coerce", format="mixed")
+        parsed_date_count = int(parsed_dates.notna().sum())
+        if parsed_date_count == 0:
+            warnings.append(
+                f"The selected date column '{date_col}' did not parse as dates in the first {len(date_sample)} sampled values. Choose a real date field before running the analysis."
+            )
+        elif parsed_date_count < len(date_sample):
+            warnings.append(
+                f"The selected date column '{date_col}' only parsed {parsed_date_count} of the first {len(date_sample)} sampled values. Some rows may be removed during cleaning."
+            )
+
+    revenue_sample = raw_df[revenue_col].dropna().head(sample_size)
+    if revenue_sample.empty:
+        warnings.append(
+            f"The selected revenue column '{revenue_col}' is empty in the sampled rows. Choose a populated numeric field before continuing."
+        )
+    else:
+        parsed_revenue = pd.to_numeric(revenue_sample, errors="coerce")
+        parsed_revenue_count = int(parsed_revenue.notna().sum())
+        if parsed_revenue_count == 0:
+            warnings.append(
+                f"The selected revenue column '{revenue_col}' did not parse as numbers in the first {len(revenue_sample)} sampled values. Choose a numeric sales or revenue field."
+            )
+        elif parsed_revenue_count < len(revenue_sample):
+            warnings.append(
+                f"The selected revenue column '{revenue_col}' only parsed {parsed_revenue_count} of the first {len(revenue_sample)} sampled values. Some rows may be removed during cleaning."
+            )
+
+    return warnings
+
+
+def build_empty_result_error_message(
+    quality_report: DataQualityReport,
+    *,
+    date_col: str,
+    revenue_col: str,
+) -> str:
+    """Explain why no rows remain after cleaning or filtering."""
+    if quality_report.final_row_count > 0:
+        return "No rows match the current filters. Clear or relax the filters to continue."
+
+    original_row_count = quality_report.original_row_count
+    if original_row_count > 0 and quality_report.invalid_date_rows_removed == original_row_count:
+        return (
+            f"No usable rows remain because the selected date column '{date_col}' could not be parsed as dates. "
+            "Choose a different date field or upload a CSV with a real date column."
+        )
+    if original_row_count > 0 and quality_report.invalid_revenue_rows_removed == original_row_count:
+        return (
+            f"No usable rows remain because the selected revenue column '{revenue_col}' could not be parsed as numbers. "
+            "Choose a numeric revenue field before continuing."
+        )
+    if original_row_count > 0 and quality_report.total_rows_removed_for_invalid_data == original_row_count:
+        return (
+            "All rows were removed during cleaning because the selected date or revenue values were invalid. "
+            "Check the column mapping and the uploaded CSV contents, then try again."
+        )
+    return "No rows remain after cleaning. Check the selected date and revenue columns or upload a different CSV."
+
+
 def load_dashboard_guide_markdown() -> str:
     """Load the long-form dashboard guide shown in the in-app documentation tab."""
     if not DASHBOARD_GUIDE_PATH.exists():
@@ -228,11 +502,12 @@ def render_guide_tab() -> None:
 def main() -> None:
     """Run the Streamlit dashboard."""
     st.set_page_config(
-        page_title="AI Demand and Revenue Forecasting Dashboard",
+        page_title="ForeSightSeer Dashboard",
         layout="wide",
     )
 
-    st.title("AI-Driven Demand and Revenue Forecasting Dashboard")
+    st.title("ForeSightSeer")
+    st.subheader("AI-Driven Demand and Revenue Forecasting Dashboard")
     st.caption(
         "A practical dashboard for SMEs to clean sales data, monitor KPIs, forecast revenue, "
         "and detect unusual sales behavior."
@@ -240,7 +515,12 @@ def main() -> None:
 
     raw_df = load_sales_data()
     if raw_df.empty:
-        st.info("Select a bundled dataset or upload a CSV file to begin. The guide below explains every chart and control.")
+        if len(raw_df.columns) > 0:
+            st.error("The uploaded CSV has headers but no data rows. Add at least one row with a date and revenue value.")
+        else:
+            st.info(
+                "Select a bundled dataset or upload a CSV file to begin. The guide below explains every chart and control."
+            )
         guide_tabs = st.tabs(["Guide"])
         with guide_tabs[0]:
             render_guide_tab()
@@ -250,6 +530,11 @@ def main() -> None:
     st.dataframe(raw_df.head(25), width="stretch")
 
     selections = render_sidebar_controls(raw_df)
+    mapping_error = build_mapping_selection_error(selections["date_col"], selections["revenue_col"])
+    if mapping_error:
+        st.error(mapping_error)
+        return
+
     try:
         cleaned_df, quality_report = clean_sales_data(
             raw_df=raw_df,
@@ -265,7 +550,13 @@ def main() -> None:
 
     filtered_df = apply_sidebar_filters(cleaned_df, selections["filter_columns"])
     if filtered_df.empty:
-        st.error("No rows remain after cleaning and filtering. Adjust filters or upload a different CSV.")
+        st.error(
+            build_empty_result_error_message(
+                quality_report,
+                date_col=selections["date_col"],
+                revenue_col=selections["revenue_col"],
+            )
+        )
         return
 
     frequency = selections["frequency"]
@@ -328,11 +619,15 @@ def load_sales_data() -> pd.DataFrame:
         if uploaded_file is None:
             st.sidebar.info("Choose a CSV file to start working with uploaded data.")
             return pd.DataFrame()
-        try:
-            return pd.read_csv(uploaded_file)
-        except Exception as exc:
-            st.sidebar.error(f"Could not read uploaded CSV: {exc}")
+
+        raw_df, warnings, error = read_uploaded_csv_bytes(uploaded_file.getvalue())
+        if error:
+            st.sidebar.error(error)
             return pd.DataFrame()
+
+        for warning in warnings:
+            st.sidebar.warning(warning)
+        return raw_df
 
     dataset_name = help_selectbox(
         "Bundled demo dataset",
@@ -387,6 +682,13 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
         container=st.sidebar,
         index=columns.index(default_column(columns, ["revenue", "sales", "amount", "total"])),
     )
+
+    mapping_error = build_mapping_selection_error(date_col, revenue_col)
+    if mapping_error:
+        st.sidebar.error(mapping_error)
+
+    for warning in build_mapping_validation_warnings(raw_df, date_col=date_col, revenue_col=revenue_col):
+        st.sidebar.warning(warning)
 
     optional_transaction_options = ["None", *columns]
     default_transactions = optional_default_column(columns, ["transaction", "orders", "quantity", "units"])
@@ -613,6 +915,9 @@ def render_forecasting_tab(
 ) -> ForecastResult:
     """Render forecasting controls, metrics, chart, and result tables."""
     render_help_heading("Forecasting", HELP_TEXT["forecasting"], level="header")
+    st.caption(
+        "Use this tab to answer the next planning question for the business: what should demand or revenue look like next, and how uncertain is that estimate?"
+    )
     if time_series_df.empty:
         st.warning("No data is available for forecasting.")
         return ForecastResult("", pd.DataFrame(), pd.DataFrame(), None, None, ["No data available."])

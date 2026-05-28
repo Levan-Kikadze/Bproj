@@ -2,7 +2,7 @@
 
 ## Project Title
 
-AI-Driven Demand and Revenue Forecasting Dashboard for SMEs
+ForeSightSeer: AI-Driven Demand and Revenue Forecasting Dashboard for SMEs
 
 ## Abstract
 
@@ -69,7 +69,13 @@ The project does not aim to provide real-time ingestion, multivariate machine le
 
 SMEs typically operate with smaller technical teams and tighter budgets than large enterprises. They need tools that are understandable, affordable, and fast to adopt. A dashboard that can be launched locally, fed with CSV files, and explained without advanced data-science knowledge is especially useful in this context.
 
-The emphasis on interpretability is important. SME users are more likely to trust a system when they can understand how it cleans data, how it calculates KPIs, how it evaluates forecasts, and why a value was flagged as anomalous.
+The value becomes clearer when viewed as a real workflow rather than as a feature list. A small retailer, wholesaler, or service business may export monthly sales from a point-of-sale or accounting system, open a spreadsheet, search manually for unusual numbers, and then estimate next month's demand using rough averages or intuition. That workflow is slow, inconsistent, and difficult to defend in front of a supervisor, owner, or investor.
+
+ForeSightSeer changes that flow in four practical ways. First, the Data Quality tab lets the user verify whether the uploaded CSV is safe to trust before any KPI or forecast is interpreted. Second, the Overview tab turns raw rows into a short performance summary that can be discussed quickly. Third, the Forecasting tab provides a short-term demand view with transparent model comparison, so the user can say not only what the forecast is, but also how accurate the tested models were on held-out history. Fourth, the anomaly workflow highlights unusual periods that deserve explanation before an SME reacts operationally.
+
+An illustrative example is a manager preparing the next month's inventory order. Without the dashboard, that manager may spend one to two hours manually checking spreadsheets, recalculating totals, and guessing whether the latest spike is real. With the dashboard, the same manager can upload a CSV, confirm data quality, compare forecast options, and leave with a forward-looking table that supports a more defensible planning conversation. This is an illustrative usage scenario rather than a measured ROI claim, but it reflects the practical value the project is designed to deliver.
+
+The emphasis on interpretability is therefore important for both trust and action. SME users are more likely to use a system when they can understand how it cleans data, how it calculates KPIs, how it evaluates forecasts, and why a value was flagged as anomalous.
 
 ## 6. System Architecture
 
@@ -105,6 +111,8 @@ The preprocessing pipeline performs the following steps:
 12. Return a data-quality report containing counts, missing values, and date range.
 
 One important design detail is that the dashboard reports unique removed rows after deduplication, rather than summing overlapping issue counts in a misleading way. This makes the Data Quality tab easier to defend during evaluation.
+
+The final implementation also improves robustness around upload and mapping mistakes. It warns the user when an uploaded CSV has no obvious date-like or revenue-like column names, checks whether the selected date and revenue fields look parseable in sample rows, prevents the same column from being used as both date and revenue, and explains more clearly when all rows disappear during cleaning because the wrong field was mapped.
 
 ## 8. Aggregation and KPI Design
 
@@ -294,6 +302,8 @@ This demonstrates that the anomaly module can highlight unusually high or low sa
 
 The project includes automated tests for the core business logic. The tests cover preprocessing behavior, aggregation, feature engineering, MAPE edge cases, forecasting output shape, confidence interval output, warning behavior on insufficient data, anomaly detection output structure, and transaction normalization reporting.
 
+The final version extends this coverage with additional imperfect-data and error-handling scenarios that are relevant to the evaluation rubric. These include missing required columns, datasets where all rows are removed during cleaning, invalid aggregation or forecasting parameters, zero-horizon forecast requests, duplicate date or revenue mapping, suspicious uploaded date or revenue selections, and clearer user-facing messaging when a CSV has headers but no usable rows.
+
 The test suite can be executed from the project root after activating the virtual environment with:
 
 ```bash
@@ -313,6 +323,8 @@ The main strengths of the final implementation are:
 - export functionality for practical use.
 
 These strengths make the project appropriate for both academic evaluation and real demonstration.
+
+They also strengthen the business case for SME use because the system does not only produce analytical outputs. It also helps the user judge whether those outputs are reliable enough to support a decision.
 
 ## 14. Limitations
 
@@ -345,7 +357,7 @@ This project delivers a practical and interpretable dashboard for SME sales anal
 
 The final implementation aligns with the project goal of building an accessible decision-support tool rather than an overly complex predictive platform. The use of modular Python code, transparent statistical methods, and automated tests makes the system technically coherent and academically defendable. The evaluation on the bundled sample dataset shows that the dashboard works end to end and produces measurable results that can be discussed critically.
 
-Overall, the project demonstrates that a focused, well-documented, and interpretable analytical system can provide meaningful value to SMEs while remaining realistic within the scope of a bachelor project.
+Overall, the project demonstrates that a focused, well-documented, and interpretable analytical system can provide meaningful value to SMEs while remaining realistic within the scope of a bachelor project. Its main contribution is not a new forecasting algorithm, but a practical workflow that helps a smaller business move from manual spreadsheet checking toward more transparent and data-backed short-term decisions.
 
 ## 17. Report Completion Notes
 

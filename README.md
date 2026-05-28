@@ -2,7 +2,7 @@
 
 ## Project Title
 
-AI-Driven Demand and Revenue Forecasting Dashboard for SMEs
+ForeSightSeer: AI-Driven Demand and Revenue Forecasting Dashboard for SMEs
 
 ## Repository Overview
 

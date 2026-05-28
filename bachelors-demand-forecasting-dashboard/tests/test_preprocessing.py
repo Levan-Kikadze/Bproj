@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from src.preprocessing import aggregate_sales_data, clean_sales_data
 
@@ -58,6 +59,33 @@ def test_preprocessing_counts_unique_removed_rows_when_issues_overlap():
     assert report.total_rows_removed_for_invalid_data == 1
 
 
+def test_preprocessing_raises_clear_error_when_required_date_column_is_missing():
+    raw_df = pd.DataFrame(
+        {
+            "sales": [100, 120],
+            "transactions": [2, 3],
+        }
+    )
+
+    with pytest.raises(ValueError, match=r"Missing required column\(s\): date"):
+        clean_sales_data(raw_df, date_col="date", revenue_col="sales")
+
+
+def test_preprocessing_returns_empty_dataframe_when_all_rows_are_removed():
+    raw_df = pd.DataFrame(
+        {
+            "date": ["bad-date", None],
+            "revenue": ["bad-number", -10],
+        }
+    )
+
+    cleaned_df, report = clean_sales_data(raw_df, date_col="date", revenue_col="revenue")
+
+    assert cleaned_df.empty
+    assert report.final_row_count == 0
+    assert report.total_rows_removed_for_invalid_data == 2
+
+
 def test_preprocessing_reports_transaction_values_normalized_to_zero():
     raw_df = pd.DataFrame(
         {
@@ -96,6 +124,18 @@ def test_aggregation_daily_weekly_and_monthly():
     assert daily["revenue"].sum() == 750
     assert weekly.loc[weekly["date"] == pd.Timestamp("2024-01-01"), "revenue"].iloc[0] == 250
     assert monthly.loc[monthly["date"] == pd.Timestamp("2024-01-01"), "transactions"].iloc[0] == 22
+
+
+def test_aggregation_rejects_invalid_frequency():
+    cleaned_df = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2024-01-01", "2024-01-02"]),
+            "revenue": [100, 120],
+        }
+    )
+
+    with pytest.raises(ValueError, match="frequency must be one of"):
+        aggregate_sales_data(cleaned_df, frequency="Quarterly")
 
 
 def test_preprocessing_preserves_extra_event_columns():

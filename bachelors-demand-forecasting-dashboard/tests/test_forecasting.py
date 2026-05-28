@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from src.forecasting import (
     calculate_mape,
     chronological_train_test_split,
+    make_future_index,
     run_exponential_smoothing_forecast,
     run_linear_regression_forecast,
     run_moving_average_forecast,
@@ -65,6 +67,20 @@ def test_moving_average_forecast_handles_too_few_observations():
     assert result.warnings
 
 
+def test_moving_average_forecast_allows_zero_horizon_without_crashing():
+    aggregated_df = pd.DataFrame(
+        {
+            "date": pd.date_range("2024-01-01", periods=20, freq="D"),
+            "revenue": np.arange(100, 120),
+        }
+    )
+
+    result = run_moving_average_forecast(aggregated_df, window=3, horizon=0)
+
+    assert not result.test_forecast.empty
+    assert result.future_forecast.empty
+
+
 def test_exponential_smoothing_forecast_can_include_prediction_intervals():
     aggregated_df = pd.DataFrame(
         {
@@ -108,4 +124,9 @@ def test_linear_regression_forecast_returns_model_details_and_intervals():
     assert {"lower_bound", "upper_bound"}.issubset(result.test_forecast.columns)
     assert result.model_details is not None and not result.model_details.empty
     assert result.features_used is not None and "promotion_active" in result.features_used
+
+
+def test_make_future_index_rejects_invalid_frequency():
+    with pytest.raises(ValueError, match="frequency must be one of"):
+        make_future_index(pd.Timestamp("2024-01-01"), horizon=7, frequency="Quarterly")
 

@@ -1,4 +1,4 @@
-# User Manual
+# ForeSightSeer: User Manual
 
 ## Purpose
 
@@ -9,6 +9,17 @@ The app now also includes:
 - a built-in `Guide` tab with a full explanation of charts, data, and interpretation,
 - small `i` help popovers next to the main sections inside the app,
 - help text on important sidebar controls and forecasting options.
+
+## Business Questions This Dashboard Answers
+
+1. Can I trust this dataset before I show numbers to anyone?
+	Use the Data Quality tab. It shows what was removed, what was normalized, and whether the cleaned data still looks usable.
+2. What is happening in the business right now?
+	Use the Overview tab. It summarizes revenue level, growth, and segment contribution so you can describe current performance quickly.
+3. What should I expect next week or next month?
+	Use the Forecasting tab. Compare the models, inspect the future forecast table, and use the output to support inventory, staffing, or target-setting discussions.
+4. Which periods need explanation before I act?
+	Use the Anomaly Detection tab. It highlights unusual spikes or drops that may reflect promotions, outages, data issues, or real business events.
 
 ## Starting the App
 
@@ -43,6 +54,8 @@ If you are new to the app, open the `Guide` tab before working with real data.
 
 Use the small `i` popovers in the app whenever you are unsure how to read a section.
 
+The app now warns you earlier when an uploaded CSV has no obvious date or revenue column, when the sampled date or revenue values do not parse cleanly, when the same column is selected for both date and revenue, or when the file has headers but no data rows.
+
 ## Using Filters
 
 If filter columns are selected, the sidebar shows filter controls. Select the categories, stores, or products you want to analyze. If all values are selected, the dashboard analyzes the full cleaned dataset.
@@ -50,6 +63,8 @@ If filter columns are selected, the sidebar shows filter controls. Select the ca
 Remember that filters change all KPIs, charts, forecasts, anomalies, and exports.
 
 ## Overview Tab
+
+Business use: this is the fastest way to answer, "How is the business performing right now?"
 
 The Overview tab shows:
 
@@ -71,6 +86,8 @@ Use the `i` help popovers beside the chart sections for plain-language interpret
 
 ## Data Quality Tab
 
+Business use: this tab is the trust checkpoint before you present KPI or forecast results.
+
 The Data Quality tab explains how the uploaded data was cleaned. It shows:
 
 - Original row count.
@@ -89,6 +106,8 @@ The Data Quality tab explains how the uploaded data was cleaned. It shows:
 Use this tab to confirm that the dataset is suitable before interpreting KPIs and forecasts. The total removed-row metric counts unique removed rows, while the issue-specific counters help explain why those rows were flagged.
 
 ## Forecasting Tab
+
+Business use: this tab answers the planning question, "What should demand or revenue look like next, and how uncertain is that estimate?"
 
 The Forecasting tab lets you choose:
 
@@ -113,9 +132,11 @@ The tab reports:
 
 If the dataset is too short or the model cannot be fitted, the app shows a warning instead of stopping.
 
-New users should start with the model comparison table, then inspect the forecast chart, then read the test and future forecast tables.
+New users should start with the model comparison table, then inspect the forecast chart, then read the future forecast table as the decision output, and finally check the test forecast table to understand past error behavior.
 
 ## Anomaly Detection Tab
+
+Business use: this tab helps you decide which unusual periods need investigation before you change stock, staffing, or targets.
 
 The Anomaly Detection tab uses rolling z-scores to find unusual revenue values.
 
@@ -148,18 +169,23 @@ These files can be opened in Excel, Google Sheets, or other reporting tools.
 ## Recommended Demo Flow
 
 1. Start with the sample dataset.
-2. Keep default column mappings.
-3. Review the Data Quality tab and explain removed rows plus transaction corrections.
-4. Review the Overview tab and describe the KPI cards.
-5. Run Moving Average with a 7-period window.
-6. Compare it with Exponential Smoothing and discuss MAE and MAPE.
-7. Switch to Linear Regression or segment comparison if you want to demonstrate deeper functionality.
-8. Open Anomaly Detection and adjust the threshold to show sensitivity.
-9. Export the results and explain how they could support a manager's decision-making.
+2. Keep default column mappings and point out that the app now warns earlier if the date or revenue mapping looks wrong.
+3. Review the Data Quality tab and explain removed rows plus transaction corrections before trusting the rest of the dashboard.
+4. Review the Overview tab and describe the KPI cards as the current-state business summary.
+5. Open the Forecasting tab and answer the main planning question: what should demand or revenue look like next?
+6. Run Moving Average with a 7-period window, compare it with Exponential Smoothing and Linear Regression, and discuss MAE and MAPE.
+7. Show the future forecast table and explain the business action it supports, such as inventory planning, staffing, or target setting.
+8. Switch to segment comparison if you want to demonstrate deeper functionality.
+9. Open Anomaly Detection and adjust the threshold to show sensitivity.
+10. Export the results and explain how they could support a manager's decision-making.
 
 ## Common Issues
 
 - If the CSV does not load, check that it is a valid comma-separated file.
+- If the app warns that no obvious date-like column was found, verify that the uploaded file includes a real date field before continuing.
+- If the app warns that the selected date or revenue field does not parse in sampled values, change the mapping before trusting the analysis.
+- If the file has headers but no data rows, add at least one valid sales row before uploading again.
+- If the same field is selected as both date and revenue, choose two different columns; the app now blocks that invalid configuration.
 - If dates are removed, check that the selected date column contains parseable dates.
 - If revenue rows are removed, check for missing, text-based, or negative revenue values.
 - If transaction values are corrected to zero, check for text entries, blanks, or negative values in the selected transactions column.

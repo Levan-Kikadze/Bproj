@@ -1,4 +1,4 @@
-# AI-Driven Demand and Revenue Forecasting Dashboard for SMEs
+# ForeSightSeer: AI-Driven Demand and Revenue Forecasting Dashboard for SMEs
 
 ## Project Summary
 
@@ -12,10 +12,30 @@ The implementation focuses on explainability and a clear evaluation story rather
 - useful visual outputs for a live demo,
 - automated tests for the main business logic.
 
+## Business Value for SMEs
+
+ForeSightSeer is designed for small teams that still rely on spreadsheets, manual checks, and judgment calls when planning stock, staffing, or sales targets. In a typical SME workflow, a manager can upload a CSV, confirm that the data is trustworthy, review the latest KPI trend, compare several short-term forecasts, and export the result for a meeting or planning discussion in one session.
+
+Without a tool like this, the same workflow is often fragmented across spreadsheets and manual formulas:
+
+- data-quality issues can stay hidden until late in the analysis,
+- KPI definitions can differ from person to person,
+- short-term planning depends too heavily on intuition,
+- unusual sales spikes or drops are harder to investigate quickly.
+
+With ForeSightSeer, each feature supports a concrete decision:
+
+- Data Quality helps the user decide whether the uploaded dataset is safe to trust.
+- Overview helps the user decide whether performance is improving or weakening.
+- Forecasting helps the user estimate near-term demand and defend inventory or target-setting decisions.
+- Anomaly Detection helps the user decide which periods need investigation before acting.
+
+The value is not only in charts. It is in making SME analysis faster, more consistent, and easier to explain to non-technical stakeholders.
+
 ## Core Features
 
-- CSV upload with raw data preview.
-- Flexible column mapping for date, revenue, optional transactions, and optional business dimensions.
+- CSV upload with raw data preview, upload-time column warnings, and clearer empty-data feedback.
+- Flexible column mapping for date, revenue, optional transactions, and optional business dimensions, with validation warnings when selected date or revenue fields look suspicious.
 - Optional holiday and promotion column mapping for forecast features.
 - Preprocessing that removes duplicates, invalid dates, invalid revenue values, and negative revenue rows.
 - Explicit reporting of unique removed rows and transaction values that were normalized to zero.
@@ -145,14 +165,15 @@ This approach is easy to explain during a presentation and appropriate for an SM
 ## Recommended Demo Narrative
 
 1. Start with the sample dataset so the app opens with valid data immediately.
-2. Show the raw preview and column mapping.
-3. Open the Data Quality tab and explain what was removed or normalized.
-4. Present the KPI cards and revenue trend.
-5. Compare Moving Average, Exponential Smoothing, and Linear Regression on the same holdout split.
-6. Show confidence intervals and explain why the linear regression coefficients are interpretable.
-7. Compare a store or product segment forecast using the segment comparison section.
-8. Show the anomaly view and explain threshold sensitivity.
-9. Export the outputs.
+2. Show the raw preview and column mapping, and explain that bad date or revenue mapping would now trigger warnings before the analysis continues.
+3. Open the Data Quality tab and explain why an SME should validate trust in the data before trusting the KPI or forecast output.
+4. Present the KPI cards and revenue trend as the current-state business snapshot.
+5. Open the Forecasting tab and answer the key planning question: what should demand or revenue look like next week or next month?
+6. Compare Moving Average, Exponential Smoothing, and Linear Regression on the same holdout split, then show the future forecast table and confidence intervals.
+7. Translate the forecast into a business action such as inventory planning, staffing, or target setting.
+8. Compare a store or product segment forecast using the segment comparison section if you need a richer decision story.
+9. Show the anomaly view and explain threshold sensitivity.
+10. Export the outputs.
 
 ## Limitations
 

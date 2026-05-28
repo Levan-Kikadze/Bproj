@@ -1,0 +1,4 @@
+date,revenue,transactions
+bad-date,not-a-number,2
+2024-13-01,missing,3
+not-a-date,-10,4

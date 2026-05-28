@@ -1,5 +1,7 @@
 # Dashboard Help Guide
 
+ForeSightSeer user guide for dashboard interpretation and demo preparation.
+
 ## Purpose of This Guide
 
 This page explains how to use the dashboard if you are new to data analysis, charts, or forecasting. It focuses on plain-language interpretation rather than technical formulas.
@@ -58,6 +60,8 @@ Column mapping tells the app what each field means.
 
 If a chart looks strange, check the mapping first. Wrong mapping is one of the most common reasons for confusing output.
 
+The app now also warns earlier when no obvious date-like or revenue-like column names are detected, when sampled values from the selected date or revenue column do not parse correctly, or when the same field is selected as both date and revenue. Treat those warnings as a stop sign rather than as cosmetic messages.
+
 ## Aggregation and Filters
 
 ### Aggregation Frequency
@@ -103,6 +107,8 @@ This is not the final cleaned dataset. It is only the starting point.
 ## Overview Tab
 
 The Overview tab is the best place to begin interpretation.
+
+Business question it answers: "What is happening in the business right now?"
 
 ### KPI Summary
 
@@ -181,6 +187,8 @@ What not to do:
 
 This tab explains what happened to the data before analysis.
 
+Business question it answers: "Can I trust this dataset enough to act on the results?"
+
 ### Data Quality Summary Cards
 
 Important fields:
@@ -230,6 +238,8 @@ If your charts or KPIs seem surprising, inspect this table first.
 ## Forecasting Tab
 
 The Forecasting tab compares models and then shows one selected model in detail.
+
+Business question it answers: "What should I expect next, and how uncertain is that forecast?"
 
 ### Forecasting Controls
 
@@ -297,6 +307,8 @@ Use it to answer questions such as:
 - Which future periods look strongest or weakest?
 - How uncertain is the forecast?
 
+This is the easiest forecasting output to use in a live demo because it turns model evaluation into a direct planning conversation.
+
 ### Model Coefficients
 
 This section appears for Linear Regression.
@@ -322,6 +334,8 @@ Use it to answer:
 ## Anomaly Detection Tab
 
 This tab highlights unusual periods.
+
+Business question it answers: "Which periods need explanation before I make a business decision?"
 
 ### Controls
 
@@ -382,9 +396,10 @@ For a safe and clear workflow, follow this order:
 4. Read the KPI cards in the Overview tab.
 5. Inspect the trend and growth charts.
 6. Compare segments if needed.
-7. Open Forecasting and compare models.
-8. Inspect the anomaly results.
-9. Export only after you are satisfied with filters and settings.
+7. Open Forecasting, compare models, and then show the future forecast table as the short-term demand answer.
+8. Translate the forecast into a concrete action such as inventory, staffing, or target planning.
+9. Inspect the anomaly results.
+10. Export only after you are satisfied with filters and settings.
 
 ## Common Mistakes to Avoid
 
