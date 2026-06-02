@@ -1266,8 +1266,6 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
         index=columns.index(st.session_state[DATE_COL_KEY]),
         key=DATE_COL_KEY,
     )
-    _set_session_value(DATE_COL_KEY, date_col)
-
     default_revenue = default_column(columns, ["revenue", "sales", "amount", "total"])
     if st.session_state.get(REVENUE_COL_KEY) not in columns:
         _set_session_value(REVENUE_COL_KEY, default_revenue)
@@ -1279,8 +1277,6 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
         index=columns.index(st.session_state[REVENUE_COL_KEY]),
         key=REVENUE_COL_KEY,
     )
-    _set_session_value(REVENUE_COL_KEY, revenue_col)
-
     mapping_error = build_mapping_selection_error(date_col, revenue_col)
     if mapping_error:
         st.sidebar.error(mapping_error)
@@ -1300,8 +1296,6 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
         key=TRANSACTIONS_COL_KEY,
     )
     transactions_col = None if transactions_col_selection == "None" else transactions_col_selection
-    _set_session_value(TRANSACTIONS_COL_KEY, transactions_col_selection)
-
     default_holiday = optional_default_column(columns, ["holiday", "festive", "event"])
     if st.session_state.get(HOLIDAY_COL_KEY) not in optional_transaction_options:
         _set_session_value(HOLIDAY_COL_KEY, default_holiday)
@@ -1314,8 +1308,6 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
         key=HOLIDAY_COL_KEY,
     )
     holiday_col = None if holiday_col_selection == "None" else holiday_col_selection
-    _set_session_value(HOLIDAY_COL_KEY, holiday_col_selection)
-
     default_promotion = optional_default_column(columns, ["promotion", "promo", "campaign", "discount"])
     if st.session_state.get(PROMOTION_COL_KEY) not in optional_transaction_options:
         _set_session_value(PROMOTION_COL_KEY, default_promotion)
@@ -1328,8 +1320,6 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
         key=PROMOTION_COL_KEY,
     )
     promotion_col = None if promotion_col_selection == "None" else promotion_col_selection
-    _set_session_value(PROMOTION_COL_KEY, promotion_col_selection)
-
     candidate_filter_columns = detect_categorical_columns(
         raw_df,
         exclude_columns=[
@@ -1357,8 +1347,6 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
         default=current_filter_columns,
         key=FILTER_COLUMNS_KEY,
     )
-    _set_session_value(FILTER_COLUMNS_KEY, list(filter_columns))
-
     render_help_heading("3. Aggregation", HELP_TEXT["aggregation"], container=st.sidebar, level="header")
     if st.session_state.get(FREQUENCY_KEY) not in AVAILABLE_FREQUENCIES:
         _set_session_value(FREQUENCY_KEY, "Daily")
@@ -1370,8 +1358,6 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
         index=AVAILABLE_FREQUENCIES.index(st.session_state[FREQUENCY_KEY]),
         key=FREQUENCY_KEY,
     )
-    _set_session_value(FREQUENCY_KEY, frequency)
-
     return {
         "date_col": date_col,
         "revenue_col": revenue_col,
