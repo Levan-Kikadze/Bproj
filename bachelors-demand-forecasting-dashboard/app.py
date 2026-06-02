@@ -243,29 +243,48 @@ def render_help_heading(title: str, help_text: str, *, container=st, level: str 
 
 def help_selectbox(label: str, help_text: str, options, *, container=st, **kwargs):
     """Render a selectbox with Streamlit's native help tooltip."""
+    widget_key = kwargs.get("key")
+    if widget_key is not None and widget_key in st.session_state:
+        kwargs.pop("index", None)
     return container.selectbox(label, options=options, help=help_text, **kwargs)
 
 
 def help_multiselect(label: str, help_text: str, options, *, container=st, **kwargs):
     """Render a multiselect with Streamlit's native help tooltip."""
+    widget_key = kwargs.get("key")
+    if widget_key is not None and widget_key in st.session_state:
+        kwargs.pop("default", None)
     return container.multiselect(label, options=options, help=help_text, **kwargs)
 
 
 def help_slider(label: str, help_text: str, min_value, max_value, value, *slider_args, container=st, **kwargs):
     """Render a slider with Streamlit's native help tooltip."""
+    widget_key = kwargs.get("key")
+    slider_kwargs = dict(kwargs)
+    if slider_args:
+        slider_kwargs["step"] = slider_args[0]
+    slider_kwargs["help"] = help_text
+    if widget_key is not None and widget_key in st.session_state:
+        return container.slider(
+            label,
+            min_value=min_value,
+            max_value=max_value,
+            **slider_kwargs,
+        )
     return container.slider(
         label,
-        min_value,
-        max_value,
-        value,
-        *slider_args,
-        help=help_text,
-        **kwargs,
+        min_value=min_value,
+        max_value=max_value,
+        value=value,
+        **slider_kwargs,
     )
 
 
 def help_checkbox(label: str, help_text: str, *, container=st, **kwargs):
     """Render a checkbox with Streamlit's native help tooltip."""
+    widget_key = kwargs.get("key")
+    if widget_key is not None and widget_key in st.session_state:
+        kwargs.pop("value", None)
     return container.checkbox(label, help=help_text, **kwargs)
 
 
@@ -912,15 +931,17 @@ def render_dashboard_save_panel(filter_columns: list[str]) -> None:
 def load_dashboard_source_from_sidebar() -> DashboardLoadResult:
     """Render the source selector and load the selected CSV payload."""
     render_help_heading("1. Data Source", HELP_TEXT["data_source"], container=st.sidebar, level="header")
-    current_mode = st.session_state.get(DATA_SOURCE_MODE_KEY, "Bundled demo dataset")
+    available_source_modes = ["Bundled demo dataset", "Upload CSV", "Saved dashboard"]
+    current_mode = st.session_state.get(DATA_SOURCE_MODE_KEY, available_source_modes[0])
+    if current_mode not in available_source_modes:
+        current_mode = available_source_modes[0]
+        _set_session_value(DATA_SOURCE_MODE_KEY, current_mode)
     source_mode = help_selectbox(
         "Dataset source",
         "Choose bundled data for guided practice, upload your own CSV, or reopen a saved dashboard snapshot.",
-        options=["Bundled demo dataset", "Upload CSV", "Saved dashboard"],
+        options=available_source_modes,
         container=st.sidebar,
-        index=["Bundled demo dataset", "Upload CSV", "Saved dashboard"].index(current_mode)
-        if current_mode in ["Bundled demo dataset", "Upload CSV", "Saved dashboard"]
-        else 0,
+        index=available_source_modes.index(current_mode),
         key=DATA_SOURCE_MODE_KEY,
     )
 
@@ -1065,12 +1086,18 @@ def load_dashboard_source_from_sidebar() -> DashboardLoadResult:
             raw_file_name=uploaded_file.name,
         )
 
+    available_datasets = list(BUNDLED_DATASETS.keys())
+    current_dataset = st.session_state.get(BUNDLED_DATASET_KEY, available_datasets[0])
+    if current_dataset not in BUNDLED_DATASETS:
+        current_dataset = available_datasets[0]
+        _set_session_value(BUNDLED_DATASET_KEY, current_dataset)
+
     dataset_name = help_selectbox(
         "Bundled demo dataset",
         "Switch between curated demo datasets that highlight clean data, data quality issues, event features, or anomalies.",
-        options=list(BUNDLED_DATASETS.keys()),
+        options=available_datasets,
         container=st.sidebar,
-        index=0,
+        index=available_datasets.index(current_dataset),
         key=BUNDLED_DATASET_KEY,
     )
     dataset_config = BUNDLED_DATASETS[dataset_name]
@@ -1457,7 +1484,6 @@ def render_overview_tab(
             key=OVERVIEW_DIMENSION_KEY,
             index=available_dimensions.index(current_dimension),
         )
-        _set_session_value(OVERVIEW_DIMENSION_KEY, dimension)
         st.plotly_chart(revenue_by_dimension_chart(filtered_df, dimension), width="stretch")
 
 
@@ -1577,7 +1603,6 @@ def render_forecasting_tab(
         index=selected_methods.index(current_primary_method),
         key=FORECAST_PRIMARY_METHOD_KEY,
     )
-    _set_session_value(FORECAST_PRIMARY_METHOD_KEY, primary_method)
 
     current_horizon = st.session_state.get(FORECAST_HORIZON_KEY, AVAILABLE_HORIZONS[0])
     if current_horizon not in AVAILABLE_HORIZONS:
@@ -1593,7 +1618,6 @@ def render_forecasting_tab(
             key=FORECAST_HORIZON_KEY,
         )
     )
-    _set_session_value(FORECAST_HORIZON_KEY, horizon)
 
     current_confidence = st.session_state.get(FORECAST_CONFIDENCE_KEY, AVAILABLE_CONFIDENCE_LEVELS[-1])
     if current_confidence not in AVAILABLE_CONFIDENCE_LEVELS:
@@ -1609,7 +1633,6 @@ def render_forecasting_tab(
             key=FORECAST_CONFIDENCE_KEY,
         )
     )
-    _set_session_value(FORECAST_CONFIDENCE_KEY, confidence_level)
 
     segment_candidates = detect_categorical_columns(
         filtered_df,
@@ -1628,7 +1651,6 @@ def render_forecasting_tab(
         index=allowed_segments.index(current_segment_dimension),
         key=FORECAST_SEGMENT_KEY,
     )
-    _set_session_value(FORECAST_SEGMENT_KEY, segment_dimension_selection)
 
     option_columns = st.columns(3)
     max_window = max(2, min(30, len(time_series_df) - 1))
@@ -1648,7 +1670,6 @@ def render_forecasting_tab(
             key=FORECAST_WINDOW_KEY,
         )
     )
-    _set_session_value(FORECAST_WINDOW_KEY, window)
     current_use_trend = bool(st.session_state.get(FORECAST_USE_TREND_KEY, True))
     _set_session_value(FORECAST_USE_TREND_KEY, current_use_trend)
     use_trend = help_checkbox(
@@ -1658,7 +1679,6 @@ def render_forecasting_tab(
         value=current_use_trend,
         key=FORECAST_USE_TREND_KEY,
     )
-    _set_session_value(FORECAST_USE_TREND_KEY, use_trend)
     current_use_seasonality = bool(st.session_state.get(FORECAST_USE_SEASONALITY_KEY, False))
     _set_session_value(FORECAST_USE_SEASONALITY_KEY, current_use_seasonality)
     use_seasonality = help_checkbox(
@@ -1668,7 +1688,6 @@ def render_forecasting_tab(
         value=current_use_seasonality,
         key=FORECAST_USE_SEASONALITY_KEY,
     )
-    _set_session_value(FORECAST_USE_SEASONALITY_KEY, use_seasonality)
     default_period = {"Daily": 7, "Weekly": 4, "Monthly": 12}[frequency]
     seasonal_periods = default_period if use_seasonality else None
 
@@ -1911,7 +1930,6 @@ def render_anomaly_tab(time_series_df: pd.DataFrame) -> pd.DataFrame:
             key=ANOMALY_WINDOW_KEY,
         )
     )
-    _set_session_value(ANOMALY_WINDOW_KEY, window)
     current_threshold = st.session_state.get(ANOMALY_THRESHOLD_KEY, 3.0)
     if not isinstance(current_threshold, (int, float)) or current_threshold < 1.0 or current_threshold > 5.0:
         current_threshold = 3.0
@@ -1928,7 +1946,6 @@ def render_anomaly_tab(time_series_df: pd.DataFrame) -> pd.DataFrame:
             key=ANOMALY_THRESHOLD_KEY,
         )
     )
-    _set_session_value(ANOMALY_THRESHOLD_KEY, threshold)
 
     anomaly_df = detect_rolling_zscore_anomalies(
         time_series_df,
