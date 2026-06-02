@@ -1,0 +1,38 @@
+sequenceDiagram
+    actor User as SME User
+    participant Browser as Browser UI
+    participant App as Streamlit App
+    participant Prep as Preprocessing
+    participant Forecast as Forecasting
+    participant Anomaly as Anomaly Detection
+    participant Viz as Visualization
+    participant Export as CSV Export Utility
+
+    User->>Browser: Open dashboard
+    Browser->>App: Request page
+    App-->>Browser: Render controls and tabs
+
+    alt Upload CSV
+        User->>Browser: Upload file + map columns
+        Browser->>App: Send file and mapping
+    else Use sample dataset
+        User->>Browser: Select bundled sample
+        Browser->>App: Send sample choice
+    end
+
+    App->>Prep: Validate, clean, aggregate
+    Prep-->>App: Cleaned frame + quality report
+
+    App->>Forecast: Train and evaluate models
+    Forecast-->>App: MAE/MAPE + future forecast
+
+    App->>Anomaly: Detect outliers with rolling z-score
+    Anomaly-->>App: Anomaly flags and stats
+
+    App->>Viz: Build charts and KPI cards
+    Viz-->>Browser: Display metrics and plots
+
+    User->>Browser: Request exports
+    Browser->>App: Trigger export action
+    App->>Export: Build downloadable CSV files
+    Export-->>Browser: Return export streams

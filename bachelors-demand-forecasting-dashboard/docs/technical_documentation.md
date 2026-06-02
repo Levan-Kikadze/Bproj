@@ -1,313 +1,403 @@
-# ForeSightSeer: Technical Documentation
+ForeSightSeer: Technical Documentation
 
-## Problem Statement
+1. Problem Statement
 
-Small and medium-sized enterprises often have sales data in CSV files but lack a simple analytical system for validating data quality, monitoring revenue KPIs, forecasting future demand, and detecting unusual trends. This project provides a Streamlit dashboard that converts uploaded sales data into actionable business insights using explainable statistical methods.
+Small and medium sized enterprises often keep sales data in CSV files. They still need a simple way to check data quality, track revenue KPIs, forecast future demand, and find unusual trends.
 
-## System Architecture
+This project gives you a Streamlit dashboard that turns uploaded sales data into useful business outputs. It uses clear statistical methods that you can explain during a demo, report review, or bachelor defense.
 
-The application is organized as a small modular Python project:
+2. System Architecture
 
-- `app.py`: Streamlit user interface and workflow orchestration.
-- `src/features.py`: calendar, holiday, and promotion feature engineering helpers.
-- `src/preprocessing.py`: CSV cleaning, validation, data quality reporting, and aggregation.
-- `src/kpis.py`: KPI and revenue growth calculations.
-- `src/forecasting.py`: Moving Average, Exponential Smoothing, Linear Regression, regularized forecast frames, train/test split, MAE, and MAPE.
-- `src/anomaly_detection.py`: Rolling z-score anomaly detection.
-- `src/visualization.py`: Plotly chart construction.
-- `src/utils.py`: formatting, CSV export, and helper functions.
-- `tests/`: pytest tests for the core business logic.
+The application uses a small modular Python structure.
 
-The Streamlit app receives user input, delegates reusable calculations to `src/`, and displays tables, metrics, charts, warnings, and downloads.
+app.py
+Runs the Streamlit interface and controls the user workflow.
 
-## Architecture Views
+src/features.py
+Creates calendar, holiday, and promotion features.
 
-### Component View
+src/preprocessing.py
+Cleans CSV files, validates inputs, reports data quality, and aggregates sales data.
 
-```mermaid
-flowchart LR
-	User[User] --> Browser[Browser]
-	Browser --> App[Streamlit App\napp.py]
-	App --> Prep[src/preprocessing.py]
-	App --> KPI[src/kpis.py]
-	App --> Forecast[src/forecasting.py]
-	App --> Anomaly[src/anomaly_detection.py]
-	App --> Viz[src/visualization.py]
-	App --> Utils[src/utils.py]
-	Prep --> Data[(Uploaded CSV / Sample CSV)]
-	Forecast --> Output[(Forecast Tables / Charts)]
-	Anomaly --> Output
-	Viz --> Output
-	Utils --> Output
+src/kpis.py
+Calculates KPIs and revenue growth.
+
+src/forecasting.py
+Runs Moving Average, Exponential Smoothing, Linear Regression, regular forecast frames, train and test splits, MAE, and MAPE.
+
+src/anomaly_detection.py
+Detects anomalies with rolling z scores.
+
+src/visualization.py
+Builds Plotly charts.
+
+src/utils.py
+Handles formatting, CSV export, and helper functions.
+
+tests/
+Stores pytest tests for the core business logic.
+
+The Streamlit app receives your input, sends reusable calculations to the src modules, and shows tables, metrics, charts, warnings, and downloads.
+
+3. UML Diagrams
+
+The project stores UML diagram source files under:
+
+- docs/assets/uml_diagrams/component_diagram.mmd
+- docs/assets/uml_diagrams/deployment_diagram.mmd
+- docs/assets/uml_diagrams/sequence_diagram.mmd
+
+The rendered files used in reports and slides are:
+
+- docs/assets/uml_diagrams/component_diagram.svg
+- docs/assets/uml_diagrams/component_diagram.png
+- docs/assets/uml_diagrams/deployment_diagram.svg
+- docs/assets/uml_diagrams/deployment_diagram.png
+- docs/assets/uml_diagrams/sequence_diagram.svg
+- docs/assets/uml_diagrams/sequence_diagram.png
+
+3.1 UML Component Diagram
+
+![UML Component Diagram](assets/uml_diagrams/component_diagram.svg)
+
+Reading focus:
+
+1. Entry points: user interaction and data input channels.
+2. Orchestration layer: Streamlit app as the workflow coordinator.
+3. Domain modules: preprocessing, features, KPIs, forecasting, anomaly detection, and visualization.
+4. Output paths: rendered visuals and CSV exports.
+
+3.2 UML Deployment Diagram
+
+![UML Deployment Diagram](assets/uml_diagrams/deployment_diagram.svg)
+
+Reading focus:
+
+1. Execution boundary: all components run on one local machine.
+2. Runtime boundary: Streamlit process and Python modules inside the virtual environment.
+3. Data lifecycle: local CSV inputs to in-app analytics to local CSV outputs.
+
+3.3 UML Sequence Diagram
+
+![UML Sequence Diagram](assets/uml_diagrams/sequence_diagram.svg)
+
+Reading focus:
+
+1. Startup and interaction initiation.
+2. Dataset selection branch (upload vs bundled sample).
+3. Processing pipeline order: preprocessing to forecasting to anomaly detection to visualization.
+4. Export path for final artifacts.
+
+4. Diagram Regeneration Workflow
+
+If you update any .mmd source diagram, regenerate all assets from the project root:
+
+```bash
+python render_uml.py
 ```
 
-### Deployment View
+The renderer fetches Mermaid output and writes both SVG and PNG files, ensuring diagrams load reliably in markdown viewers and slide tools.
 
-```mermaid
-flowchart TB
-	subgraph LocalMachine[Local user machine]
-		CSV[CSV files / sample_data]
-		Server[Streamlit server]
-		Browser[Web browser]
-		Source[Python source + tests]
-	end
+5. Technology Stack and Justification
 
-	CSV --> Server
-	Source --> Server
-	Server --> Browser
-	Browser --> Server
+The project uses these technologies.
+
+Python 3.10+
+Runs the application and all analytical logic.
+
+Streamlit, version 1.32 or later
+Builds the interactive dashboard quickly.
+
+pandas, version 2.0 or later
+Cleans, transforms, and aggregates data.
+
+NumPy, version 1.24 or later
+Handles numerical operations.
+
+Plotly, version 5.18 or later
+Creates interactive charts.
+
+scikit-learn, version 1.3 or later
+Calculates MAE.
+
+statsmodels, version 0.14 or later
+Runs Exponential Smoothing and supports prediction intervals for Linear Regression.
+
+pytest, version 8.0 or later
+Runs automated regression tests.
+
+These choices fit the project because they keep the code readable, support fast development, and make the methods easy to explain. The system uses a Python first design because the project focuses on analysis, dashboard use, and reproducible results.
+
+6. User Interface and External Interfaces
+
+The system does not expose a public REST API or database interface. You interact with it through the Streamlit web application. You exchange data through CSV upload and CSV export.
+
+6.1 Main Interface Areas
+
+The dashboard includes these areas.
+
+1. Sidebar data source section for CSV upload or sample data fallback.
+2. Column mapping controls for date, revenue, optional transactions, optional holiday and promotion indicators, and optional categorical dimensions.
+3. Aggregation selector for daily, weekly, and monthly analysis.
+4. Optional categorical filters.
+5. Overview tab for KPIs and revenue charts.
+6. Data Quality tab for cleaning results and cleaned data previews.
+7. Forecasting tab for model comparison, confidence levels, interpretable coefficients, segment comparison, evaluation metrics, and future forecasts.
+8. Anomaly Detection tab for rolling z score controls and anomaly tables.
+9. Export tab for downloading processed outputs.
+
+6.2 Exported Files
+
+The dashboard exports these files.
+
+1. cleaned_aggregated_sales.csv
+2. forecast_results.csv
+3. anomaly_results.csv
+
+This UI focused design supports the project goal. It gives SMEs a practical dashboard instead of a backend platform.
+
+6.3 Saved Dashboards
+
+The app also stores named dashboard snapshots locally.
+
+1. The uploaded or bundled CSV is saved as compressed raw bytes.
+2. The current widget state is saved as JSON alongside the data snapshot.
+3. Saved dashboards are listed in the sidebar so users can load or delete them later.
+4. Reloading a saved dashboard restores the source selection, column mappings, filters, and analysis controls before the charts render.
+
+The implementation uses a local SQLite database under `runtime/saved_dashboards.db`. Because the store lives on disk inside the app runtime, deployments need persistent local storage if they should survive restarts.
+
+7. Installation, Configuration, and Troubleshooting
+
+7.1 Installation
+
+Create a virtual environment.
+
+```bash
+python3 -m venv .venv
 ```
 
-### Interaction Flow
+Activate the environment.
 
-```mermaid
-sequenceDiagram
-	participant U as User
-	participant A as Streamlit App
-	participant P as Preprocessing
-	participant F as Forecasting
-	participant D as Anomaly Detection
-
-	U->>A: Upload CSV or use sample data
-	U->>A: Map columns and choose frequency
-	A->>P: Clean and aggregate data
-	P-->>A: Clean data + DataQualityReport
-	U->>A: Open Forecasting tab
-	A->>F: Prepare regular series and run forecast
-	F-->>A: Test forecast + future forecast + metrics
-	U->>A: Open Anomaly Detection tab
-	A->>D: Compute rolling z-scores
-	D-->>A: Anomaly table + anomaly flags
+```bash
+source .venv/bin/activate
 ```
 
-## Technology Stack and Justification
+Install dependencies.
 
-The main project technologies are:
+```bash
+pip install -r requirements.txt
+```
 
-- Python 3.10+ as the implementation language.
-- Streamlit (requirements: `streamlit>=1.32`) for rapid development of an interactive analytical dashboard.
-- pandas (`pandas>=2.0`) for data manipulation, cleaning, and aggregation.
-- NumPy (`numpy>=1.24`) for numerical operations.
-- Plotly (`plotly>=5.18`) for interactive visualizations.
-- scikit-learn (`scikit-learn>=1.3`) for MAE calculation.
-- statsmodels (`statsmodels>=0.14`) for Exponential Smoothing and Linear Regression prediction intervals.
-- pytest (`pytest>=8.0`) for automated regression testing.
+Start the application.
 
-These choices are appropriate for the project because they prioritize readability, fast iteration, statistical transparency, and reproducibility. The system is intentionally implemented as a Python-first analytical product rather than as a distributed web system with a separate frontend/backend split.
+```bash
+streamlit run app.py
+```
 
-## User Interface and External Interfaces
+7.2 Configuration
 
-The system does not expose a public REST API or database interface. Its primary interface is the Streamlit web application, and its external data exchange happens through CSV import and CSV export.
+The project does not require environment variables or external services. You configure runtime behavior through the Streamlit UI.
 
-### Main Interface Areas
+You can set these options.
 
-- Sidebar data source section for CSV upload or sample-data fallback.
-- Column-mapping controls for date, revenue, optional transactions, optional holiday/promotion indicators, and optional categorical dimensions.
-- Aggregation selector for daily, weekly, and monthly analysis.
-- Optional categorical filters.
-- Overview tab for KPIs and revenue visualizations.
-- Data Quality tab for cleaning results and cleaned-data previews.
-- Forecasting tab for multi-model comparison, confidence levels, interpretable coefficients, segment comparison, evaluation metrics, and future forecasts.
-- Anomaly Detection tab for rolling z-score controls and anomaly tables.
-- Export tab for downloading processed outputs.
+1. Selected columns.
+2. Selected aggregation frequency.
+3. Forecasting methods and horizon.
+4. Confidence level.
+5. Moving average window.
+6. Trend and seasonality options.
+7. Optional holiday and promotion columns.
+8. Anomaly window and threshold.
+9. Categorical filters.
 
-### Exported Files
+7.3 Troubleshooting
 
-- `cleaned_aggregated_sales.csv`
-- `forecast_results.csv`
-- `anomaly_results.csv`
+If the app does not start, confirm that you activated the virtual environment and installed the dependencies.
 
-This UI-focused design is aligned with the project goal of delivering a practical SME dashboard rather than a backend platform.
+If tests fail with import issues, run them from the project root after you activate the virtual environment.
 
-## Installation, Configuration, and Troubleshooting
+If a CSV loads incorrectly, check the delimiter and selected columns.
 
-### Installation
+If Exponential Smoothing returns warnings, use Moving Average or provide more historical data.
 
-1. Create a virtual environment with `python3 -m venv .venv`.
-2. Activate the environment with `source .venv/bin/activate`.
-3. Install dependencies with `pip install -r requirements.txt`.
-4. Start the application with `streamlit run app.py`.
+If Linear Regression performs poorly, check the holiday and promotion columns. Compare it against simpler baselines before you use it in the final demo.
 
-### Configuration
+If MAPE is unavailable, the evaluation slice likely contains only zero actual values.
 
-The project does not require environment variables or external services. Runtime behavior is configured through the Streamlit UI:
+If saved dashboards disappear after a restart, the deployment is probably using ephemeral storage. Move the app to a host with persistent disk or mount a durable volume for `runtime/saved_dashboards.db`.
 
-- selected columns,
-- selected aggregation frequency,
-- forecasting methods and horizon,
-- confidence level,
-- moving average window,
-- trend/seasonality options,
-- optional holiday and promotion columns,
-- anomaly window and threshold,
-- categorical filters.
+8. Preprocessing Pipeline
 
-### Troubleshooting
-
-- If the app does not start, confirm the virtual environment is active and the dependencies are installed.
-- If tests fail with import issues, run them from the project root after activating the virtual environment.
-- If a CSV loads incorrectly, verify delimiter format and selected columns.
-- If Exponential Smoothing returns warnings, use Moving Average or provide more historical data.
-- If Linear Regression performs poorly, verify the holiday/promotion columns and compare it against the simpler baselines before using it in the final demo.
-- If MAPE is unavailable, the evaluation slice likely contains only zero actual values.
-
-## Preprocessing Pipeline
-
-The preprocessing pipeline performs the following steps:
+The preprocessing pipeline follows these steps.
 
 1. Validate that the selected date and revenue columns exist.
 2. Remove exact duplicate rows.
-3. Rename selected fields to standardized names: `date`, `revenue`, and optionally `transactions`.
-4. Preserve optional holiday or promotion columns with their original names for later feature engineering.
+3. Rename selected fields to standard names: date, revenue, and transactions when available.
+4. Preserve optional holiday or promotion columns with their original names for feature engineering.
 5. Convert the selected date column to pandas datetime.
 6. Convert revenue and transaction columns to numeric values.
 7. Remove rows with invalid dates.
-8. Remove rows with missing or non-numeric revenue.
+8. Remove rows with missing or non numeric revenue.
 9. Remove negative revenue rows by default.
-10. Normalize invalid transaction values to zero so transaction-based KPIs remain usable.
-11. Clip negative transaction values to zero and report how many corrections were made.
-12. Sort rows chronologically.
-13. Return a `DataQualityReport` with row counts, unique removed rows, transaction corrections, missing values, and date range.
+10. Normalize invalid transaction values to zero so transaction based KPIs remain usable.
+11. Clip negative transaction values to zero and report how many values changed.
+12. Sort rows by date.
+13. Return a DataQualityReport with row counts, unique removed rows, transaction corrections, missing values, and date range.
 
-Negative revenue values are removed instead of forecasted because the dashboard is intended for simple revenue forecasting. In a real accounting dataset, negative rows could represent returns or refunds and may need a separate business rule.
+The dashboard removes negative revenue values because it focuses on simple revenue forecasting. In a real accounting dataset, negative rows may represent returns or refunds. You should handle those cases with a separate business rule.
 
-Rows removed for invalid data are reported as a unique count after deduplication, which avoids double-counting rows that have more than one issue, such as an invalid date and missing revenue on the same record.
+The dashboard reports removed rows as a unique count after deduplication. This avoids double counting rows that have more than one issue, such as an invalid date and missing revenue in the same record.
 
-## Aggregation
+9. Aggregation
 
-The dashboard supports:
+The dashboard supports three aggregation levels.
 
-- Daily aggregation.
-- Weekly aggregation using week-start labels.
-- Monthly aggregation using month-start labels.
+1. Daily aggregation.
+2. Weekly aggregation using week start labels.
+3. Monthly aggregation using month start labels.
 
-Revenue is aggregated using sum. Transactions are also summed when a transaction column is selected.
-When optional holiday or promotion indicator columns are present, the aggregation keeps the strongest signal in each period using max so a weekly or monthly bucket still reflects whether the event occurred.
+The system sums revenue. When you select a transaction column, the system also sums transactions.
 
-## KPI Module
+When optional holiday or promotion indicator columns exist, aggregation keeps the strongest signal in each period by using max. This means a weekly or monthly bucket still shows whether the event occurred.
 
-The KPI module calculates:
+10. KPI Module
 
-- Total revenue.
-- Average revenue.
-- Maximum revenue.
-- Minimum revenue.
-- Total transactions, if available.
-- Average order value, if transactions are available.
-- Latest period-over-period revenue growth.
+The KPI module calculates these metrics.
 
-Period-over-period growth compares the most recent aggregated period against the previous aggregated period. If the previous period has zero revenue, growth is reported as unavailable.
+1. Total revenue.
+2. Average revenue.
+3. Maximum revenue.
+4. Minimum revenue.
+5. Total transactions, when available.
+6. Average order value, when transactions are available.
+7. Latest period over period revenue growth.
 
-## Forecasting Module
+Period over period growth compares the most recent aggregated period with the previous aggregated period. If the previous period has zero revenue, the dashboard reports growth as unavailable.
 
-The forecasting module uses a chronological train/test split:
+11. Forecasting Module
 
-- First 80% of observations for training.
-- Last 20% for testing.
-- No random shuffling, because this is time-series data.
+The forecasting module uses a chronological train and test split.
 
-### Moving Average
+1. The first 80% of observations train the model.
+2. The last 20% test the model.
+3. The system does not shuffle rows because the data is time series data.
 
-The Moving Average method uses a walk-forward evaluation. For each test period, it predicts revenue using the average of the most recent `window` values, then adds the actual test value to the history before predicting the next test period. Future forecasts are generated recursively.
+11.1 Moving Average
 
-### Exponential Smoothing
+The Moving Average method uses walk forward evaluation. For each test period, it predicts revenue from the average of the most recent window values. Then it adds the actual test value to the history before predicting the next test period.
 
-Exponential Smoothing is implemented with `statsmodels.tsa.holtwinters.ExponentialSmoothing`. The app supports:
+The method generates future forecasts recursively.
 
-- Optional additive trend.
-- Optional additive seasonality when there are enough training observations.
+11.2 Exponential Smoothing
 
-The module catches model fitting errors and returns user-facing warnings instead of crashing the dashboard. When a confidence level is selected, the dashboard also computes approximate prediction intervals from the residual scale so the user can see uncertainty bands around test and future forecasts.
+Exponential Smoothing uses statsmodels.tsa.holtwinters.ExponentialSmoothing. The app supports two options.
 
-### Linear Regression with Calendar Features
+1. Additive trend.
+2. Additive seasonality when the training data has enough observations.
 
-The project also includes an interpretable Linear Regression model built from a deterministic feature matrix. The feature set includes:
+The module catches model fitting errors and returns clear warnings instead of crashing the dashboard.
 
-- time index,
-- day-of-week and month indicators,
-- day-of-month and week-of-year values,
-- quarter, month-start, and month-end flags,
-- built-in holiday flags,
-- optional uploaded holiday indicators,
-- optional uploaded promotion indicators.
+When you select a confidence level, the dashboard computes approximate prediction intervals from the residual scale. This helps you see uncertainty around test and future forecasts.
 
-This model is useful when revenue responds to regular calendar structure or known events. Coefficients are exposed in the UI so the user can explain which signals push the forecast up or down.
+11.3 Linear Regression with Calendar Features
 
-### Multi-Model Evaluation
+The project includes an interpretable Linear Regression model built from a deterministic feature matrix.
 
-The Forecasting tab can run several models on the same chronological split. It presents a comparison table with MAE, MAPE, forecast lengths, and warnings so the user can justify which model was chosen for the detailed view or the final demo.
+The feature set includes these signals.
 
-### Segment Comparison
+1. Time index.
+2. Day of week and month indicators.
+3. Day of month and week of year values.
+4. Quarter, month start, and month end flags.
+5. Built in holiday flags.
+6. Optional uploaded holiday indicators.
+7. Optional uploaded promotion indicators.
 
-The Forecasting tab can also compare the future forecast across the top segments of one selected categorical dimension, such as product category or store. This provides a more decision-oriented view than a single aggregated forecast.
+This model works best when revenue follows calendar patterns or known events. The UI shows the coefficients so you can explain which signals push the forecast up or down.
 
-## Evaluation Metrics
+11.4 Multi Model Evaluation
 
-### MAE
+The Forecasting tab can run several models on the same chronological split. It shows a comparison table with MAE, MAPE, forecast lengths, and warnings. You can use that table to justify which model you chose for the detailed view or final demo.
 
-Mean Absolute Error is calculated with scikit-learn. It measures the average absolute difference between actual and predicted revenue.
+11.5 Segment Comparison
 
-### MAPE
+The Forecasting tab can compare future forecasts across the top segments of one selected categorical dimension, such as product category or store. This gives you a more decision focused view than one aggregated forecast.
 
-Mean Absolute Percentage Error is calculated manually so zero actual values can be handled safely. Rows where actual revenue is zero are excluded from MAPE. If every actual value is zero, MAPE returns `NaN` and the app explains why.
+12. Evaluation Metrics
 
-## Missing Dates
+12.1 MAE
 
-Before forecasting, the module creates a regular time series for the selected aggregation frequency. Missing periods are filled with zero revenue and reported as warnings. This prevents model crashes but may not match every business interpretation of missing data.
+Mean Absolute Error measures the average absolute difference between actual and predicted revenue. The project calculates it with scikit-learn.
 
-## Anomaly Detection Method
+12.2 MAPE
 
-The anomaly detection module uses rolling z-scores:
+Mean Absolute Percentage Error measures average percentage error. The project calculates it manually so it can handle zero actual values safely.
 
-1. Shift revenue by one period so the current observation is compared only to previous observations.
+Rows where actual revenue equals zero are excluded from MAPE. If every actual value equals zero, MAPE returns NaN and the app explains why.
+
+13. Missing Dates
+
+Before forecasting, the module creates a regular time series for the selected aggregation frequency. It fills missing periods with zero revenue and reports warnings.
+
+This prevents model crashes. It also needs careful interpretation because a missing period may mean missing data rather than zero sales.
+
+14. Anomaly Detection Method
+
+The anomaly detection module uses rolling z scores.
+
+It follows these steps.
+
+1. Shift revenue by one period so the current observation is compared only with previous observations.
 2. Calculate rolling mean and rolling standard deviation.
-3. Calculate z-score as `(current revenue - rolling mean) / rolling standard deviation`.
-4. Flag rows where `abs(z-score)` is greater than the selected threshold.
+3. Calculate z score as current revenue minus rolling mean, divided by rolling standard deviation.
+4. Flag rows where the absolute z score is greater than the selected threshold.
 
-The output includes:
+The output includes these columns.
 
-- `rolling_mean`
-- `rolling_std`
-- `z_score`
-- `is_anomaly`
+1. rolling_mean
+2. rolling_std
+3. z_score
+4. is_anomaly
 
-This approach is interpretable and easy to explain, but it is sensitive to outliers, window size, and threshold selection.
+This approach is easy to explain. It also has limits. It is sensitive to outliers, window size, and threshold choice.
 
-## Testing Approach
+15. Testing Approach
 
-Pytest tests cover the most important business logic:
+Pytest tests cover the most important business logic.
 
-- Invalid dates and missing revenue are removed.
-- Duplicate rows are removed.
-- Rows with multiple issues are counted once in the total removed-row metric.
-- Invalid and negative transaction values are reported when normalized to zero.
-- Daily, weekly, and monthly aggregation preserves revenue and transaction totals.
-- Optional event columns are preserved through preprocessing and aggregation.
-- Calendar feature engineering produces a stable design matrix for future forecasts.
-- MAPE ignores zero actual values.
-- MAPE returns `NaN` if all actual values are zero.
-- Moving Average returns the expected output shape.
-- Exponential Smoothing can emit prediction intervals.
-- Linear Regression returns prediction intervals and interpretable coefficients.
-- Too-few-observation forecasting returns warnings instead of crashing.
-- Anomaly detection returns required output columns.
+1. Invalid dates and missing revenue are removed.
+2. Duplicate rows are removed.
+3. Rows with multiple issues are counted once in the total removed row metric.
+4. Invalid and negative transaction values are reported when normalized to zero.
+5. Daily, weekly, and monthly aggregation preserves revenue and transaction totals.
+6. Optional event columns are preserved through preprocessing and aggregation.
+7. Calendar feature engineering produces a stable design matrix for future forecasts.
+8. MAPE ignores zero actual values.
+9. MAPE returns NaN if all actual values are zero.
+10. Moving Average returns the expected output shape.
+11. Exponential Smoothing can emit prediction intervals.
+12. Linear Regression returns prediction intervals and interpretable coefficients.
+13. Too few observations in forecasting return warnings instead of crashing.
+14. Anomaly detection returns required output columns.
 
-The Streamlit interface itself is not unit-tested; the test suite focuses on reusable pure-Python logic in `src/`.
+The test suite does not unit test the Streamlit interface. It focuses on reusable pure Python logic in src.
 
-For reproducibility, the tests can be executed directly from the project root after activating the virtual environment with the standard command:
+For reproducibility, run the tests from the project root after you activate the virtual environment.
 
 ```bash
 pytest
 ```
 
-## Limitations
+16. Limitations
 
-- Moving Average and Exponential Smoothing use only historical revenue.
-- Linear Regression captures calendar structure and optional event indicators, but it still does not model richer business drivers such as price changes, competitor activity, or marketing spend.
-- The sample data is synthetic and should not be interpreted as real business performance.
-- Missing dates are filled with zero revenue for forecasting.
-- Exponential Smoothing may not be suitable for highly intermittent sales.
-- Linear Regression may underperform when the data pattern is weakly explained by calendar or event features.
-- The app is designed for interactive analysis, not automated production forecasting.
-- There is no authentication, database, or real-time ingestion.
+The system has clear limits.
 
+1. Moving Average and Exponential Smoothing use only historical revenue.
+2. Linear Regression captures calendar structure and optional event indicators, but it does not model richer business drivers such as price changes, competitor activity, or marketing spend.
+3. The sample data is synthetic. Do not treat it as real business performance.
+4. Missing dates are filled with zero revenue for forecasting.
+5. Exponential Smoothing can perform poorly on highly intermittent sales.
+6. Linear Regression can perform poorly when calendar or event features do not explain the data pattern.
+7. The app supports interactive analysis. It does not run automated production forecasting.
+8. The project does not include authentication, a database, or real time ingestion.

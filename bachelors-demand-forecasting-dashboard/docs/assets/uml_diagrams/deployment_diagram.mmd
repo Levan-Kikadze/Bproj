@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph Device[Local Machine]
+        User[Student or SME User]
+        Browser[Browser]
+
+        subgraph Runtime[Python Virtual Environment]
+            Streamlit[Streamlit Process\napp.py]
+            Modules[Analytics Modules\nsrc/*.py]
+        end
+
+        DataIn[(CSV Input Files)]
+        Sample[(sample_data/*.csv)]
+        DataOut[(Generated CSV Exports)]
+    end
+
+    User --> Browser
+    Browser <--> Streamlit
+    Streamlit <--> Modules
+    DataIn --> Browser
+    Sample --> Streamlit
+    Streamlit --> DataOut

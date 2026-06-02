@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 from io import BytesIO
+from dataclasses import dataclass
+from typing import Any
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +20,7 @@ from src.forecasting import (
     run_moving_average_forecast,
 )
 from src.kpis import calculate_kpis
+from src.dashboard_store import DashboardStore, SavedDashboardRecord, SavedDashboardSummary
 from src.preprocessing import DataQualityReport, aggregate_sales_data, clean_sales_data
 from src.utils import (
     dataframe_to_csv_bytes,
@@ -40,7 +43,9 @@ from src.visualization import (
 
 PROJECT_ROOT = Path(__file__).parent
 SAMPLE_DATA_DIR = PROJECT_ROOT / "sample_data"
+RUNTIME_DIR = PROJECT_ROOT / "runtime"
 DASHBOARD_GUIDE_PATH = PROJECT_ROOT / "docs" / "dashboard_help_guide.md"
+SAVE_DASHBOARD_DB_PATH = RUNTIME_DIR / "saved_dashboards.db"
 BUNDLED_DATASETS = {
     "Full clean sample": {
         "file_name": "sample_sales_data.csv",
@@ -59,6 +64,52 @@ BUNDLED_DATASETS = {
         "description": "Irregular time series with gaps and clear spikes or drops for anomaly and missing-period demos.",
     },
 }
+
+DATA_SOURCE_MODE_KEY = "dashboard_source_mode"
+BUNDLED_DATASET_KEY = "dashboard_bundled_dataset"
+SAVED_DASHBOARD_SELECTION_KEY = "dashboard_saved_dashboard_selection"
+DASHBOARD_NAME_KEY = "dashboard_save_name"
+DATE_COL_KEY = "dashboard_date_col"
+REVENUE_COL_KEY = "dashboard_revenue_col"
+TRANSACTIONS_COL_KEY = "dashboard_transactions_col"
+HOLIDAY_COL_KEY = "dashboard_holiday_col"
+PROMOTION_COL_KEY = "dashboard_promotion_col"
+FILTER_COLUMNS_KEY = "dashboard_filter_columns"
+FREQUENCY_KEY = "dashboard_frequency"
+OVERVIEW_DIMENSION_KEY = "dashboard_overview_dimension"
+FORECAST_METHODS_KEY = "dashboard_forecast_methods"
+FORECAST_PRIMARY_METHOD_KEY = "dashboard_forecast_primary_method"
+FORECAST_HORIZON_KEY = "dashboard_forecast_horizon"
+FORECAST_CONFIDENCE_KEY = "dashboard_forecast_confidence"
+FORECAST_SEGMENT_KEY = "dashboard_forecast_segment_dimension"
+FORECAST_WINDOW_KEY = "dashboard_forecast_window"
+FORECAST_USE_TREND_KEY = "dashboard_forecast_use_trend"
+FORECAST_USE_SEASONALITY_KEY = "dashboard_forecast_use_seasonality"
+ANOMALY_WINDOW_KEY = "dashboard_anomaly_window"
+ANOMALY_THRESHOLD_KEY = "dashboard_anomaly_threshold"
+RAW_CSV_BYTES_KEY = "dashboard_raw_csv_bytes"
+RAW_DF_CACHE_KEY = "dashboard_raw_df_cache"
+RAW_FILE_NAME_KEY = "dashboard_raw_file_name"
+SOURCE_TYPE_KEY = "dashboard_source_type"
+SOURCE_NAME_KEY = "dashboard_source_name"
+ACTIVE_SAVED_DASHBOARD_KEY = "dashboard_active_saved_dashboard"
+
+AVAILABLE_FORECAST_METHODS = ["Moving Average", "Exponential Smoothing", "Linear Regression"]
+AVAILABLE_HORIZONS = [7, 14, 30]
+AVAILABLE_CONFIDENCE_LEVELS = [0.8, 0.9, 0.95]
+AVAILABLE_FREQUENCIES = ["Daily", "Weekly", "Monthly"]
+
+
+@dataclass(frozen=True)
+class DashboardLoadResult:
+    """Current raw dashboard source and its originating metadata."""
+
+    raw_df: pd.DataFrame
+    raw_csv_bytes: bytes
+    source_type: str
+    source_name: str
+    raw_file_name: str | None
+
 
 DATE_COLUMN_KEYWORDS = ["date", "day", "period", "week", "month", "time"]
 REVENUE_COLUMN_KEYWORDS = ["revenue", "sales", "amount", "total", "income"]
@@ -486,6 +537,582 @@ def build_empty_result_error_message(
     return "No rows remain after cleaning. Check the selected date and revenue columns or upload a different CSV."
 
 
+def get_dashboard_store() -> DashboardStore:
+    """Return the local dashboard store, creating the runtime directory if needed."""
+    return DashboardStore(SAVE_DASHBOARD_DB_PATH)
+
+
+def rerun_app() -> None:
+    """Trigger a Streamlit rerun with backward-compatible API support."""
+    if hasattr(st, "rerun"):
+        st.rerun()
+        return
+    st.experimental_rerun()
+
+
+def _filter_selection_key(column: str) -> str:
+    return f"dashboard_filter_values::{column}"
+
+
+def _set_session_value(key: str, value: Any) -> None:
+    st.session_state[key] = value
+
+
+def _coerce_option(value: Any, options: list[Any], default: Any) -> Any:
+    if value in options:
+        return value
+    return default
+
+
+def _coerce_list(value: Any, options: list[str], default: list[str]) -> list[str]:
+    if not isinstance(value, list):
+        return default
+    coerced = [str(item) for item in value if str(item) in options]
+    if value and not coerced:
+        return default
+    return coerced
+
+
+def clear_dynamic_filter_state() -> None:
+    """Remove filter widget keys so a newly loaded dataset can rebuild them safely."""
+    for key in [key for key in list(st.session_state.keys()) if key.startswith("dashboard_filter_values::")]:
+        del st.session_state[key]
+
+
+def normalize_loaded_ui_state(raw_df: pd.DataFrame, ui_state: dict[str, Any]) -> dict[str, Any]:
+    """Coerce a saved UI state so it matches the current dataset and widget options."""
+    columns = list(raw_df.columns)
+    if not columns:
+        return {
+            "source_mode": _coerce_option(ui_state.get("source_mode"), ["Bundled demo dataset", "Upload CSV", "Saved dashboard"], "Saved dashboard"),
+            "dashboard_name": ui_state.get("dashboard_name", "Untitled dashboard"),
+            "source_name": ui_state.get("source_name"),
+            "source_type": ui_state.get("source_type"),
+            "date_col": ui_state.get("date_col"),
+            "revenue_col": ui_state.get("revenue_col"),
+            "transactions_col": ui_state.get("transactions_col", "None"),
+            "holiday_col": ui_state.get("holiday_col", "None"),
+            "promotion_col": ui_state.get("promotion_col", "None"),
+            "filter_columns": [],
+            "frequency": _coerce_option(ui_state.get("frequency"), AVAILABLE_FREQUENCIES, "Daily"),
+            "overview_dimension": None,
+            "forecast_methods": AVAILABLE_FORECAST_METHODS.copy(),
+            "forecast_primary_method": ui_state.get("forecast_primary_method", AVAILABLE_FORECAST_METHODS[0]),
+            "forecast_horizon": _coerce_option(ui_state.get("forecast_horizon"), AVAILABLE_HORIZONS, 7),
+            "forecast_confidence": _coerce_option(ui_state.get("forecast_confidence"), AVAILABLE_CONFIDENCE_LEVELS, 0.95),
+            "forecast_segment_dimension": "None",
+            "forecast_window": ui_state.get("forecast_window", 7),
+            "forecast_use_trend": bool(ui_state.get("forecast_use_trend", True)),
+            "forecast_use_seasonality": bool(ui_state.get("forecast_use_seasonality", False)),
+            "anomaly_window": ui_state.get("anomaly_window", 14),
+            "anomaly_threshold": ui_state.get("anomaly_threshold", 3.0),
+            "filter_values": {},
+        }
+
+    candidate_filter_columns = detect_categorical_columns(
+        raw_df,
+        exclude_columns=[
+            col
+            for col in [
+                ui_state.get("date_col"),
+                ui_state.get("revenue_col"),
+                ui_state.get("transactions_col"),
+                ui_state.get("holiday_col"),
+                ui_state.get("promotion_col"),
+            ]
+            if isinstance(col, str)
+        ],
+    )
+    filter_columns = _coerce_list(ui_state.get("filter_columns"), candidate_filter_columns, [])
+
+    normalized_filter_values: dict[str, list[str]] = {}
+    raw_filter_values = ui_state.get("filter_values", {})
+    if isinstance(raw_filter_values, dict):
+        for column in filter_columns:
+            options = sorted(raw_df[column].dropna().astype(str).unique().tolist()) if column in raw_df.columns else []
+            selected_values = [str(value) for value in raw_filter_values.get(column, []) if str(value) in options]
+            if selected_values or not raw_filter_values.get(column):
+                normalized_filter_values[column] = selected_values
+            else:
+                normalized_filter_values[column] = options
+
+    selected_methods = _coerce_list(ui_state.get("forecast_methods"), AVAILABLE_FORECAST_METHODS, AVAILABLE_FORECAST_METHODS.copy())
+    if not selected_methods:
+        selected_methods = AVAILABLE_FORECAST_METHODS.copy()
+
+    primary_method = ui_state.get("forecast_primary_method", selected_methods[0])
+    if primary_method not in selected_methods:
+        primary_method = selected_methods[0]
+
+    segment_dimension = ui_state.get("forecast_segment_dimension", "None")
+    available_segments = ["None", *candidate_filter_columns]
+    if segment_dimension not in available_segments:
+        segment_dimension = "None"
+
+    frequency = _coerce_option(ui_state.get("frequency"), AVAILABLE_FREQUENCIES, "Daily")
+    horizon = _coerce_option(ui_state.get("forecast_horizon"), AVAILABLE_HORIZONS, 7)
+    confidence_level = _coerce_option(ui_state.get("forecast_confidence"), AVAILABLE_CONFIDENCE_LEVELS, 0.95)
+
+    normalized_state: dict[str, Any] = {
+        "source_mode": _coerce_option(ui_state.get("source_mode"), ["Bundled demo dataset", "Upload CSV", "Saved dashboard"], "Saved dashboard"),
+        "dashboard_name": ui_state.get("dashboard_name", "Untitled dashboard"),
+        "source_name": ui_state.get("source_name"),
+        "source_type": ui_state.get("source_type"),
+        "date_col": _coerce_option(ui_state.get("date_col"), columns, default_column(columns, ["date", "day", "period"])),
+        "revenue_col": _coerce_option(ui_state.get("revenue_col"), columns, default_column(columns, ["revenue", "sales", "amount", "total"])),
+        "transactions_col": _coerce_option(ui_state.get("transactions_col"), ["None", *columns], "None"),
+        "holiday_col": _coerce_option(ui_state.get("holiday_col"), ["None", *columns], "None"),
+        "promotion_col": _coerce_option(ui_state.get("promotion_col"), ["None", *columns], "None"),
+        "filter_columns": filter_columns,
+        "frequency": frequency,
+        "overview_dimension": ui_state.get("overview_dimension") if ui_state.get("overview_dimension") in candidate_filter_columns else None,
+        "forecast_methods": selected_methods,
+        "forecast_primary_method": primary_method,
+        "forecast_horizon": horizon,
+        "forecast_confidence": confidence_level,
+        "forecast_segment_dimension": segment_dimension,
+        "forecast_window": ui_state.get("forecast_window", 7),
+        "forecast_use_trend": bool(ui_state.get("forecast_use_trend", True)),
+        "forecast_use_seasonality": bool(ui_state.get("forecast_use_seasonality", False)),
+        "anomaly_window": ui_state.get("anomaly_window", 14),
+        "anomaly_threshold": ui_state.get("anomaly_threshold", 3.0),
+        "filter_values": normalized_filter_values,
+    }
+
+    return normalized_state
+
+
+def apply_loaded_ui_state(raw_df: pd.DataFrame, ui_state: dict[str, Any]) -> None:
+    """Apply a saved UI state to Streamlit session state before widgets render."""
+    normalized = normalize_loaded_ui_state(raw_df, ui_state)
+    clear_dynamic_filter_state()
+
+    for key, value in [
+        (DATA_SOURCE_MODE_KEY, normalized["source_mode"]),
+        (DASHBOARD_NAME_KEY, normalized["dashboard_name"]),
+        (SOURCE_NAME_KEY, normalized.get("source_name")),
+        (SOURCE_TYPE_KEY, normalized.get("source_type")),
+        (DATE_COL_KEY, normalized["date_col"]),
+        (REVENUE_COL_KEY, normalized["revenue_col"]),
+        (TRANSACTIONS_COL_KEY, normalized["transactions_col"]),
+        (HOLIDAY_COL_KEY, normalized["holiday_col"]),
+        (PROMOTION_COL_KEY, normalized["promotion_col"]),
+        (FILTER_COLUMNS_KEY, normalized["filter_columns"]),
+        (FREQUENCY_KEY, normalized["frequency"]),
+        (OVERVIEW_DIMENSION_KEY, normalized.get("overview_dimension")),
+        (FORECAST_METHODS_KEY, normalized["forecast_methods"]),
+        (FORECAST_PRIMARY_METHOD_KEY, normalized["forecast_primary_method"]),
+        (FORECAST_HORIZON_KEY, normalized["forecast_horizon"]),
+        (FORECAST_CONFIDENCE_KEY, normalized["forecast_confidence"]),
+        (FORECAST_SEGMENT_KEY, normalized["forecast_segment_dimension"]),
+        (FORECAST_WINDOW_KEY, normalized["forecast_window"]),
+        (FORECAST_USE_TREND_KEY, normalized["forecast_use_trend"]),
+        (FORECAST_USE_SEASONALITY_KEY, normalized["forecast_use_seasonality"]),
+        (ANOMALY_WINDOW_KEY, normalized["anomaly_window"]),
+        (ANOMALY_THRESHOLD_KEY, normalized["anomaly_threshold"]),
+    ]:
+        _set_session_value(key, value)
+
+    for column, selected_values in normalized["filter_values"].items():
+        _set_session_value(_filter_selection_key(column), selected_values)
+
+
+def apply_saved_dashboard_record(record: SavedDashboardRecord, raw_df: pd.DataFrame) -> None:
+    """Restore a saved dashboard snapshot and mark it as the active saved source."""
+    apply_loaded_ui_state(raw_df, record.ui_state)
+    _set_session_value(DATA_SOURCE_MODE_KEY, "Saved dashboard")
+    _set_session_value(SAVED_DASHBOARD_SELECTION_KEY, record.name)
+    _set_session_value(RAW_CSV_BYTES_KEY, record.raw_csv_bytes)
+    _set_session_value(RAW_DF_CACHE_KEY, raw_df)
+    _set_session_value(RAW_FILE_NAME_KEY, record.raw_file_name)
+    _set_session_value(SOURCE_TYPE_KEY, record.source_type)
+    _set_session_value(SOURCE_NAME_KEY, record.name)
+    _set_session_value(ACTIVE_SAVED_DASHBOARD_KEY, record.name)
+
+
+def collect_dashboard_ui_state(filter_columns: list[str]) -> dict[str, Any]:
+    """Capture the currently rendered widget state for persistence."""
+    filter_values = {
+        column: list(st.session_state.get(_filter_selection_key(column), []))
+        for column in filter_columns
+    }
+    forecast_methods = st.session_state.get(FORECAST_METHODS_KEY, AVAILABLE_FORECAST_METHODS)
+    if not isinstance(forecast_methods, list):
+        forecast_methods = AVAILABLE_FORECAST_METHODS.copy()
+    return {
+        "source_mode": st.session_state.get(DATA_SOURCE_MODE_KEY, "Bundled demo dataset"),
+        "dashboard_name": st.session_state.get(DASHBOARD_NAME_KEY, "Untitled dashboard"),
+        "source_name": st.session_state.get(SOURCE_NAME_KEY),
+        "source_type": st.session_state.get(SOURCE_TYPE_KEY),
+        "date_col": st.session_state.get(DATE_COL_KEY),
+        "revenue_col": st.session_state.get(REVENUE_COL_KEY),
+        "transactions_col": st.session_state.get(TRANSACTIONS_COL_KEY),
+        "holiday_col": st.session_state.get(HOLIDAY_COL_KEY),
+        "promotion_col": st.session_state.get(PROMOTION_COL_KEY),
+        "filter_columns": list(filter_columns),
+        "frequency": st.session_state.get(FREQUENCY_KEY, "Daily"),
+        "overview_dimension": st.session_state.get(OVERVIEW_DIMENSION_KEY),
+        "forecast_methods": list(forecast_methods),
+        "forecast_primary_method": st.session_state.get(FORECAST_PRIMARY_METHOD_KEY),
+        "forecast_horizon": st.session_state.get(FORECAST_HORIZON_KEY, 7),
+        "forecast_confidence": st.session_state.get(FORECAST_CONFIDENCE_KEY, 0.95),
+        "forecast_segment_dimension": st.session_state.get(FORECAST_SEGMENT_KEY, "None"),
+        "forecast_window": st.session_state.get(FORECAST_WINDOW_KEY, 7),
+        "forecast_use_trend": bool(st.session_state.get(FORECAST_USE_TREND_KEY, True)),
+        "forecast_use_seasonality": bool(st.session_state.get(FORECAST_USE_SEASONALITY_KEY, False)),
+        "anomaly_window": st.session_state.get(ANOMALY_WINDOW_KEY, 14),
+        "anomaly_threshold": st.session_state.get(ANOMALY_THRESHOLD_KEY, 3.0),
+        "filter_values": filter_values,
+    }
+
+
+def _build_dashboard_load_result(
+    *,
+    raw_csv_bytes: bytes,
+    source_type: str,
+    source_name: str,
+    raw_file_name: str | None,
+) -> DashboardLoadResult:
+    raw_df, warnings, error = read_uploaded_csv_bytes(raw_csv_bytes)
+    if error:
+        raise ValueError(error)
+    for warning in warnings:
+        st.sidebar.warning(warning)
+    _set_session_value(RAW_CSV_BYTES_KEY, raw_csv_bytes)
+    _set_session_value(RAW_DF_CACHE_KEY, raw_df)
+    _set_session_value(RAW_FILE_NAME_KEY, raw_file_name)
+    _set_session_value(SOURCE_TYPE_KEY, source_type)
+    _set_session_value(SOURCE_NAME_KEY, source_name)
+    _set_session_value(DATA_SOURCE_MODE_KEY, source_type_to_mode(source_type))
+    return DashboardLoadResult(
+        raw_df=raw_df,
+        raw_csv_bytes=raw_csv_bytes,
+        source_type=source_type,
+        source_name=source_name,
+        raw_file_name=raw_file_name,
+    )
+
+
+def source_type_to_mode(source_type: str) -> str:
+    """Map a stored source type to the sidebar data-source label."""
+    if source_type == "saved_dashboard":
+        return "Saved dashboard"
+    if source_type == "uploaded_csv":
+        return "Upload CSV"
+    return "Bundled demo dataset"
+
+
+def build_dashboard_save_snapshot(filter_columns: list[str]) -> dict[str, Any]:
+    """Build the JSON-serializable UI snapshot saved alongside the CSV bytes."""
+    return collect_dashboard_ui_state(filter_columns)
+
+
+def save_current_dashboard(
+    *,
+    dashboard_name: str,
+    raw_csv_bytes: bytes,
+    source_type: str,
+    raw_file_name: str | None,
+    filter_columns: list[str],
+) -> SavedDashboardRecord:
+    """Persist the current dashboard snapshot to SQLite."""
+    store = get_dashboard_store()
+    ui_state = build_dashboard_save_snapshot(filter_columns)
+    return store.save_dashboard(
+        name=dashboard_name,
+        source_type=source_type,
+        raw_csv_bytes=raw_csv_bytes,
+        ui_state=ui_state,
+        raw_file_name=raw_file_name,
+    )
+
+
+def load_saved_dashboard_record(dashboard_name: str) -> SavedDashboardRecord:
+    """Load a saved dashboard snapshot from SQLite."""
+    return get_dashboard_store().load_dashboard(dashboard_name)
+
+
+def list_saved_dashboards() -> list[SavedDashboardSummary]:
+    """Return the saved dashboards available for loading."""
+    return get_dashboard_store().list_dashboards()
+
+
+def delete_saved_dashboard(dashboard_name: str) -> bool:
+    """Delete a saved dashboard by name."""
+    return get_dashboard_store().delete_dashboard(dashboard_name)
+
+
+def prime_state_for_source(raw_df: pd.DataFrame, *, dashboard_name: str | None = None) -> None:
+    """Set safe defaults for widgets tied to the current raw dataset."""
+    clear_dynamic_filter_state()
+    columns = list(raw_df.columns)
+    _set_session_value(DATE_COL_KEY, default_column(columns, ["date", "day", "period"]))
+    _set_session_value(REVENUE_COL_KEY, default_column(columns, ["revenue", "sales", "amount", "total"]))
+    _set_session_value(TRANSACTIONS_COL_KEY, optional_default_column(columns, ["transaction", "orders", "quantity", "units"]))
+    _set_session_value(HOLIDAY_COL_KEY, optional_default_column(columns, ["holiday", "festive", "event"]))
+    _set_session_value(PROMOTION_COL_KEY, optional_default_column(columns, ["promotion", "promo", "campaign", "discount"]))
+
+    candidate_filter_columns = detect_categorical_columns(
+        raw_df,
+        exclude_columns=[
+            col
+            for col in [
+                st.session_state.get(DATE_COL_KEY),
+                st.session_state.get(REVENUE_COL_KEY),
+                st.session_state.get(TRANSACTIONS_COL_KEY) if st.session_state.get(TRANSACTIONS_COL_KEY) != "None" else None,
+                st.session_state.get(HOLIDAY_COL_KEY) if st.session_state.get(HOLIDAY_COL_KEY) != "None" else None,
+                st.session_state.get(PROMOTION_COL_KEY) if st.session_state.get(PROMOTION_COL_KEY) != "None" else None,
+            ]
+            if isinstance(col, str)
+        ],
+    )
+    preferred_filter_columns = [col for col in ["product_category", "store_id", "product_id"] if col in candidate_filter_columns]
+    _set_session_value(FILTER_COLUMNS_KEY, preferred_filter_columns)
+    _set_session_value(FREQUENCY_KEY, "Daily")
+    _set_session_value(FORECAST_METHODS_KEY, AVAILABLE_FORECAST_METHODS.copy())
+    _set_session_value(FORECAST_PRIMARY_METHOD_KEY, "Linear Regression")
+    _set_session_value(FORECAST_SEGMENT_KEY, "None")
+    _set_session_value(OVERVIEW_DIMENSION_KEY, preferred_filter_columns[0] if preferred_filter_columns else None)
+    _set_session_value(DASHBOARD_NAME_KEY, dashboard_name or "Untitled dashboard")
+
+
+def render_dashboard_save_panel(filter_columns: list[str]) -> None:
+    """Render the save controls for the current dashboard snapshot."""
+    render_help_heading("Save Dashboard", "Name and save the current dashboard state so it can be reopened later.", container=st.sidebar, level="header")
+    st.sidebar.caption("Saved dashboards are stored locally in the app runtime database.")
+    _set_session_value(DASHBOARD_NAME_KEY, st.session_state.get(DASHBOARD_NAME_KEY, "Untitled dashboard"))
+    dashboard_name = st.sidebar.text_input(
+        "Dashboard name",
+        key=DASHBOARD_NAME_KEY,
+        help="Give the current dashboard a memorable name before saving it.",
+    )
+
+    can_save = bool(st.session_state.get(RAW_CSV_BYTES_KEY))
+    if st.sidebar.button("Save dashboard", type="primary", disabled=not can_save):
+        raw_csv_bytes = st.session_state.get(RAW_CSV_BYTES_KEY)
+        if not raw_csv_bytes:
+            st.sidebar.error("Load a CSV first before saving a dashboard.")
+            return
+
+        try:
+            record = save_current_dashboard(
+                dashboard_name=dashboard_name,
+                raw_csv_bytes=raw_csv_bytes,
+                source_type=str(st.session_state.get(DATA_SOURCE_MODE_KEY, "Bundled demo dataset")),
+                raw_file_name=st.session_state.get(RAW_FILE_NAME_KEY),
+                filter_columns=filter_columns,
+            )
+        except (ValueError, OSError) as exc:
+            st.sidebar.error(str(exc))
+            return
+
+        st.sidebar.success(f"Saved '{record.name}' and updated the local dashboard store.")
+
+
+def load_dashboard_source_from_sidebar() -> DashboardLoadResult:
+    """Render the source selector and load the selected CSV payload."""
+    render_help_heading("1. Data Source", HELP_TEXT["data_source"], container=st.sidebar, level="header")
+    current_mode = st.session_state.get(DATA_SOURCE_MODE_KEY, "Bundled demo dataset")
+    source_mode = help_selectbox(
+        "Dataset source",
+        "Choose bundled data for guided practice, upload your own CSV, or reopen a saved dashboard snapshot.",
+        options=["Bundled demo dataset", "Upload CSV", "Saved dashboard"],
+        container=st.sidebar,
+        index=["Bundled demo dataset", "Upload CSV", "Saved dashboard"].index(current_mode)
+        if current_mode in ["Bundled demo dataset", "Upload CSV", "Saved dashboard"]
+        else 0,
+        key=DATA_SOURCE_MODE_KEY,
+    )
+
+    if source_mode == "Saved dashboard":
+        saved_dashboards = list_saved_dashboards()
+        dashboard_names = [summary.name for summary in saved_dashboards]
+        options = ["Select a saved dashboard", *dashboard_names]
+        current_selection = st.session_state.get(SAVED_DASHBOARD_SELECTION_KEY, options[0])
+        if current_selection not in options:
+            current_selection = options[0]
+            _set_session_value(SAVED_DASHBOARD_SELECTION_KEY, current_selection)
+
+        saved_dashboard_name = help_selectbox(
+            "Saved dashboard",
+            "Pick a previously saved dashboard snapshot.",
+            options=options,
+            container=st.sidebar,
+            index=options.index(current_selection),
+            key=SAVED_DASHBOARD_SELECTION_KEY,
+        )
+
+        if not dashboard_names:
+            st.sidebar.info("No saved dashboards yet. Save one after loading data.")
+            return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", "", None)
+
+        button_columns = st.sidebar.columns(2)
+        load_clicked = button_columns[0].button("Load selected dashboard")
+        delete_clicked = button_columns[1].button("Delete selected dashboard")
+        if saved_dashboard_name == "Select a saved dashboard":
+            st.sidebar.info("Choose a saved dashboard, then click Load.")
+            return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", "", None)
+
+        if delete_clicked:
+            removed = delete_saved_dashboard(saved_dashboard_name)
+            if removed:
+                st.sidebar.success(f"Deleted saved dashboard '{saved_dashboard_name}'.")
+            else:
+                st.sidebar.warning(f"Could not find saved dashboard '{saved_dashboard_name}'.")
+            _set_session_value(SAVED_DASHBOARD_SELECTION_KEY, "Select a saved dashboard")
+            clear_dynamic_filter_state()
+            _set_session_value(RAW_CSV_BYTES_KEY, b"")
+            _set_session_value(RAW_DF_CACHE_KEY, pd.DataFrame())
+            _set_session_value(RAW_FILE_NAME_KEY, None)
+            _set_session_value(SOURCE_NAME_KEY, "")
+            _set_session_value(SOURCE_TYPE_KEY, "saved_dashboard")
+            _set_session_value(ACTIVE_SAVED_DASHBOARD_KEY, "")
+            return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", saved_dashboard_name, None)
+
+        active_saved_dashboard = st.session_state.get(ACTIVE_SAVED_DASHBOARD_KEY)
+        raw_df_cache = st.session_state.get(RAW_DF_CACHE_KEY)
+        current_raw_csv_bytes = st.session_state.get(RAW_CSV_BYTES_KEY, b"")
+        has_cached_dashboard = (
+            saved_dashboard_name == active_saved_dashboard
+            and isinstance(raw_df_cache, pd.DataFrame)
+            and not raw_df_cache.empty
+            and bool(current_raw_csv_bytes)
+        )
+
+        if not load_clicked and not has_cached_dashboard:
+            st.sidebar.info("Select a saved dashboard and click Load to restore it.")
+            return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", saved_dashboard_name, None)
+
+        if load_clicked or not has_cached_dashboard:
+            try:
+                record = load_saved_dashboard_record(saved_dashboard_name)
+            except KeyError as exc:
+                st.sidebar.error(str(exc))
+                return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", saved_dashboard_name, None)
+
+            raw_df, warnings, error = read_uploaded_csv_bytes(record.raw_csv_bytes)
+            if error:
+                st.sidebar.error(error)
+                return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", saved_dashboard_name, record.raw_file_name)
+
+            for warning in warnings:
+                st.sidebar.warning(warning)
+
+            apply_saved_dashboard_record(record, raw_df)
+            if load_clicked:
+                st.sidebar.success(f"Loaded saved dashboard '{record.name}' from {record.updated_at}.")
+            return DashboardLoadResult(
+                raw_df=raw_df,
+                raw_csv_bytes=record.raw_csv_bytes,
+                source_type=record.source_type,
+                source_name=record.name,
+                raw_file_name=record.raw_file_name,
+            )
+
+        cached_raw_df = st.session_state.get(RAW_DF_CACHE_KEY)
+        if isinstance(cached_raw_df, pd.DataFrame):
+            return DashboardLoadResult(
+                raw_df=cached_raw_df,
+                raw_csv_bytes=current_raw_csv_bytes,
+                source_type=str(st.session_state.get(SOURCE_TYPE_KEY, "saved_dashboard")),
+                source_name=saved_dashboard_name,
+                raw_file_name=st.session_state.get(RAW_FILE_NAME_KEY),
+            )
+        return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", saved_dashboard_name, None)
+
+    if source_mode == "Upload CSV":
+        uploaded_file = help_file_uploader(
+            "Upload sales CSV",
+            "Upload a comma-separated file that contains at least one date column and one revenue column.",
+            container=st.sidebar,
+            type=["csv"],
+        )
+        if uploaded_file is None:
+            st.sidebar.info("Choose a CSV file to start working with uploaded data.")
+            return DashboardLoadResult(pd.DataFrame(), b"", "uploaded_csv", "", None)
+
+        raw_csv_bytes = uploaded_file.getvalue()
+        cached_matches = (
+            st.session_state.get(SOURCE_TYPE_KEY) == "uploaded_csv"
+            and st.session_state.get(SOURCE_NAME_KEY) == uploaded_file.name
+            and st.session_state.get(RAW_CSV_BYTES_KEY) == raw_csv_bytes
+            and isinstance(st.session_state.get(RAW_DF_CACHE_KEY), pd.DataFrame)
+            and not st.session_state.get(RAW_DF_CACHE_KEY).empty
+        )
+        if cached_matches:
+            raw_df = st.session_state[RAW_DF_CACHE_KEY]
+        else:
+            raw_df, warnings, error = read_uploaded_csv_bytes(raw_csv_bytes)
+            if error:
+                st.sidebar.error(error)
+                return DashboardLoadResult(pd.DataFrame(), b"", "uploaded_csv", uploaded_file.name, uploaded_file.name)
+
+            for warning in warnings:
+                st.sidebar.warning(warning)
+
+            prime_state_for_source(raw_df, dashboard_name=uploaded_file.name.rsplit(".", 1)[0] if uploaded_file.name else None)
+            _set_session_value(RAW_CSV_BYTES_KEY, raw_csv_bytes)
+            _set_session_value(RAW_DF_CACHE_KEY, raw_df)
+            _set_session_value(RAW_FILE_NAME_KEY, uploaded_file.name)
+            _set_session_value(SOURCE_TYPE_KEY, "uploaded_csv")
+            _set_session_value(SOURCE_NAME_KEY, uploaded_file.name)
+            _set_session_value(ACTIVE_SAVED_DASHBOARD_KEY, "")
+        return DashboardLoadResult(
+            raw_df=raw_df,
+            raw_csv_bytes=raw_csv_bytes,
+            source_type="uploaded_csv",
+            source_name=uploaded_file.name,
+            raw_file_name=uploaded_file.name,
+        )
+
+    dataset_name = help_selectbox(
+        "Bundled demo dataset",
+        "Switch between curated demo datasets that highlight clean data, data quality issues, event features, or anomalies.",
+        options=list(BUNDLED_DATASETS.keys()),
+        container=st.sidebar,
+        index=0,
+        key=BUNDLED_DATASET_KEY,
+    )
+    dataset_config = BUNDLED_DATASETS[dataset_name]
+
+    st.sidebar.info("Using a bundled demo dataset.")
+    st.sidebar.caption(dataset_config["description"])
+    dataset_path = get_bundled_dataset_path(dataset_name)
+    raw_csv_bytes = dataset_path.read_bytes()
+    cached_matches = (
+        st.session_state.get(SOURCE_TYPE_KEY) == "bundled_demo"
+        and st.session_state.get(SOURCE_NAME_KEY) == dataset_name
+        and st.session_state.get(RAW_CSV_BYTES_KEY) == raw_csv_bytes
+        and isinstance(st.session_state.get(RAW_DF_CACHE_KEY), pd.DataFrame)
+        and not st.session_state.get(RAW_DF_CACHE_KEY).empty
+    )
+    if cached_matches:
+        raw_df = st.session_state[RAW_DF_CACHE_KEY]
+    else:
+        raw_df, warnings, error = read_uploaded_csv_bytes(raw_csv_bytes)
+        if error:
+            st.sidebar.error(str(error))
+            return DashboardLoadResult(pd.DataFrame(), b"", "bundled_demo", dataset_name, dataset_config["file_name"])
+
+        for warning in warnings:
+            st.sidebar.warning(warning)
+
+        prime_state_for_source(raw_df, dashboard_name=dataset_name)
+        _set_session_value(RAW_CSV_BYTES_KEY, raw_csv_bytes)
+        _set_session_value(RAW_DF_CACHE_KEY, raw_df)
+        _set_session_value(RAW_FILE_NAME_KEY, dataset_config["file_name"])
+        _set_session_value(SOURCE_TYPE_KEY, "bundled_demo")
+        _set_session_value(SOURCE_NAME_KEY, dataset_name)
+        _set_session_value(ACTIVE_SAVED_DASHBOARD_KEY, "")
+    return DashboardLoadResult(
+        raw_df=raw_df,
+        raw_csv_bytes=raw_csv_bytes,
+        source_type="bundled_demo",
+        source_name=dataset_name,
+        raw_file_name=dataset_config["file_name"],
+    )
+
+
 def load_dashboard_guide_markdown() -> str:
     """Load the long-form dashboard guide shown in the in-app documentation tab."""
     if not DASHBOARD_GUIDE_PATH.exists():
@@ -513,7 +1140,8 @@ def main() -> None:
         "and detect unusual sales behavior."
     )
 
-    raw_df = load_sales_data()
+    load_result = load_sales_data()
+    raw_df = load_result.raw_df
     if raw_df.empty:
         if len(raw_df.columns) > 0:
             st.error("The uploaded CSV has headers but no data rows. Add at least one row with a date and revenue value.")
@@ -597,54 +1225,13 @@ def main() -> None:
     with tabs[5]:
         render_guide_tab()
 
+    render_dashboard_save_panel(selections["filter_columns"])
 
-def load_sales_data() -> pd.DataFrame:
+
+def load_sales_data() -> DashboardLoadResult:
     """Load uploaded CSV data or one of the bundled demo datasets."""
-    render_help_heading("1. Data Source", HELP_TEXT["data_source"], container=st.sidebar, level="header")
-    data_source = help_selectbox(
-        "Dataset source",
-        "Choose bundled data for guided practice or upload your own CSV for real analysis.",
-        options=["Bundled demo dataset", "Upload CSV"],
-        container=st.sidebar,
-        index=0,
-    )
-
-    if data_source == "Upload CSV":
-        uploaded_file = help_file_uploader(
-            "Upload sales CSV",
-            "Upload a comma-separated file that contains at least one date column and one revenue column.",
-            container=st.sidebar,
-            type=["csv"],
-        )
-        if uploaded_file is None:
-            st.sidebar.info("Choose a CSV file to start working with uploaded data.")
-            return pd.DataFrame()
-
-        raw_df, warnings, error = read_uploaded_csv_bytes(uploaded_file.getvalue())
-        if error:
-            st.sidebar.error(error)
-            return pd.DataFrame()
-
-        for warning in warnings:
-            st.sidebar.warning(warning)
-        return raw_df
-
-    dataset_name = help_selectbox(
-        "Bundled demo dataset",
-        "Switch between curated demo datasets that highlight clean data, data quality issues, event features, or anomalies.",
-        options=list(BUNDLED_DATASETS.keys()),
-        container=st.sidebar,
-        index=0,
-    )
-    dataset_config = BUNDLED_DATASETS[dataset_name]
-
-    st.sidebar.info("Using a bundled demo dataset.")
-    st.sidebar.caption(dataset_config["description"])
-    try:
-        return load_bundled_dataset(dataset_name)
-    except (ValueError, FileNotFoundError) as exc:
-        st.sidebar.error(str(exc))
-        return pd.DataFrame()
+    load_result = load_dashboard_source_from_sidebar()
+    return load_result
 
 
 def get_bundled_dataset_path(dataset_name: str) -> Path:
@@ -668,58 +1255,80 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
     render_help_heading("2. Column Mapping", HELP_TEXT["column_mapping"], container=st.sidebar, level="header")
     columns = list(raw_df.columns)
 
+    default_date = default_column(columns, ["date", "day", "period"])
+    if st.session_state.get(DATE_COL_KEY) not in columns:
+        _set_session_value(DATE_COL_KEY, default_date)
     date_col = help_selectbox(
         "Date column",
         "Select the column that contains the sales dates or periods.",
         options=columns,
         container=st.sidebar,
-        index=columns.index(default_column(columns, ["date", "day", "period"])),
+        index=columns.index(st.session_state[DATE_COL_KEY]),
+        key=DATE_COL_KEY,
     )
+    _set_session_value(DATE_COL_KEY, date_col)
+
+    default_revenue = default_column(columns, ["revenue", "sales", "amount", "total"])
+    if st.session_state.get(REVENUE_COL_KEY) not in columns:
+        _set_session_value(REVENUE_COL_KEY, default_revenue)
     revenue_col = help_selectbox(
         "Revenue column",
         "Select the numeric column that represents revenue or sales amount.",
         options=columns,
         container=st.sidebar,
-        index=columns.index(default_column(columns, ["revenue", "sales", "amount", "total"])),
+        index=columns.index(st.session_state[REVENUE_COL_KEY]),
+        key=REVENUE_COL_KEY,
     )
+    _set_session_value(REVENUE_COL_KEY, revenue_col)
 
     mapping_error = build_mapping_selection_error(date_col, revenue_col)
     if mapping_error:
         st.sidebar.error(mapping_error)
 
+    default_transactions = optional_default_column(columns, ["transaction", "orders", "quantity", "units"])
+    optional_transaction_options = ["None", *columns]
+    if st.session_state.get(TRANSACTIONS_COL_KEY) not in optional_transaction_options:
+        _set_session_value(TRANSACTIONS_COL_KEY, default_transactions)
     for warning in build_mapping_validation_warnings(raw_df, date_col=date_col, revenue_col=revenue_col):
         st.sidebar.warning(warning)
-
-    optional_transaction_options = ["None", *columns]
-    default_transactions = optional_default_column(columns, ["transaction", "orders", "quantity", "units"])
     transactions_col_selection = help_selectbox(
         "Transactions column (optional)",
         "Choose transaction or order count if your CSV has one. It is used for transaction KPIs such as average order value.",
         options=optional_transaction_options,
         container=st.sidebar,
-        index=optional_transaction_options.index(default_transactions),
+        index=optional_transaction_options.index(st.session_state[TRANSACTIONS_COL_KEY]),
+        key=TRANSACTIONS_COL_KEY,
     )
     transactions_col = None if transactions_col_selection == "None" else transactions_col_selection
+    _set_session_value(TRANSACTIONS_COL_KEY, transactions_col_selection)
 
     default_holiday = optional_default_column(columns, ["holiday", "festive", "event"])
+    if st.session_state.get(HOLIDAY_COL_KEY) not in optional_transaction_options:
+        _set_session_value(HOLIDAY_COL_KEY, default_holiday)
     holiday_col_selection = help_selectbox(
         "Holiday column (optional)",
         "Optional binary or yes or no column used as an extra forecasting feature.",
         options=optional_transaction_options,
         container=st.sidebar,
-        index=optional_transaction_options.index(default_holiday),
+        index=optional_transaction_options.index(st.session_state[HOLIDAY_COL_KEY]),
+        key=HOLIDAY_COL_KEY,
     )
     holiday_col = None if holiday_col_selection == "None" else holiday_col_selection
+    _set_session_value(HOLIDAY_COL_KEY, holiday_col_selection)
 
     default_promotion = optional_default_column(columns, ["promotion", "promo", "campaign", "discount"])
+    if st.session_state.get(PROMOTION_COL_KEY) not in optional_transaction_options:
+        _set_session_value(PROMOTION_COL_KEY, default_promotion)
     promotion_col_selection = help_selectbox(
         "Promotion column (optional)",
         "Optional binary or yes or no promotion indicator used by Linear Regression.",
         options=optional_transaction_options,
         container=st.sidebar,
-        index=optional_transaction_options.index(default_promotion),
+        index=optional_transaction_options.index(st.session_state[PROMOTION_COL_KEY]),
+        key=PROMOTION_COL_KEY,
     )
     promotion_col = None if promotion_col_selection == "None" else promotion_col_selection
+    _set_session_value(PROMOTION_COL_KEY, promotion_col_selection)
 
     candidate_filter_columns = detect_categorical_columns(
         raw_df,
@@ -732,23 +1341,36 @@ def render_sidebar_controls(raw_df: pd.DataFrame) -> dict[str, object]:
     preferred_filter_columns = [
         col for col in ["product_category", "store_id", "product_id"] if col in candidate_filter_columns
     ]
+    current_filter_columns = st.session_state.get(FILTER_COLUMNS_KEY, preferred_filter_columns)
+    if not isinstance(current_filter_columns, list):
+        current_filter_columns = preferred_filter_columns
+    current_filter_columns = [column for column in current_filter_columns if column in candidate_filter_columns]
+    if not current_filter_columns and preferred_filter_columns:
+        current_filter_columns = preferred_filter_columns
+    _set_session_value(FILTER_COLUMNS_KEY, current_filter_columns)
 
     filter_columns = help_multiselect(
         "Filter/group columns (optional)",
         "Choose category columns such as product category, store, or product ID. These fields drive sidebar filters and comparison views.",
         options=candidate_filter_columns,
         container=st.sidebar,
-        default=preferred_filter_columns,
+        default=current_filter_columns,
+        key=FILTER_COLUMNS_KEY,
     )
+    _set_session_value(FILTER_COLUMNS_KEY, list(filter_columns))
 
     render_help_heading("3. Aggregation", HELP_TEXT["aggregation"], container=st.sidebar, level="header")
+    if st.session_state.get(FREQUENCY_KEY) not in AVAILABLE_FREQUENCIES:
+        _set_session_value(FREQUENCY_KEY, "Daily")
     frequency = help_selectbox(
         "Aggregation frequency",
         "Choose how detailed or smooth the time series should be before charts and forecasts are computed.",
         ["Daily", "Weekly", "Monthly"],
         container=st.sidebar,
-        index=0,
+        index=AVAILABLE_FREQUENCIES.index(st.session_state[FREQUENCY_KEY]),
+        key=FREQUENCY_KEY,
     )
+    _set_session_value(FREQUENCY_KEY, frequency)
 
     return {
         "date_col": date_col,
@@ -774,12 +1396,20 @@ def apply_sidebar_filters(cleaned_df: pd.DataFrame, filter_columns: list[str]) -
         options = sorted(filtered_df[column].dropna().astype(str).unique().tolist())
         if not options:
             continue
+        current_values = st.session_state.get(_filter_selection_key(column), options)
+        if not isinstance(current_values, list):
+            current_values = options
+        current_values = [value for value in current_values if value in options]
+        if not current_values and st.session_state.get(_filter_selection_key(column)) not in ([], None):
+            current_values = options
+        _set_session_value(_filter_selection_key(column), current_values)
         selected_values = help_multiselect(
             column,
             f"Filter the cleaned dataset by {column}. All charts, KPIs, forecasts, and exports update to match the values selected here.",
             options=options,
             container=st.sidebar,
-            default=options,
+            default=current_values,
+            key=_filter_selection_key(column),
         )
         if selected_values:
             filtered_df = filtered_df[filtered_df[column].astype(str).isin(selected_values)]
@@ -830,11 +1460,18 @@ def render_overview_tab(
     available_dimensions = [col for col in filter_columns if col in filtered_df.columns]
     if available_dimensions:
         render_help_heading("Revenue Breakdown", HELP_TEXT["revenue_breakdown"], level="subheader")
+        current_dimension = st.session_state.get(OVERVIEW_DIMENSION_KEY, available_dimensions[0])
+        if current_dimension not in available_dimensions:
+            current_dimension = available_dimensions[0]
+            _set_session_value(OVERVIEW_DIMENSION_KEY, current_dimension)
         dimension = help_selectbox(
             "Revenue breakdown dimension",
             "Choose which category column should be compared in the bar chart below.",
             available_dimensions,
+            key=OVERVIEW_DIMENSION_KEY,
+            index=available_dimensions.index(current_dimension),
         )
+        _set_session_value(OVERVIEW_DIMENSION_KEY, dimension)
         st.plotly_chart(revenue_by_dimension_chart(filtered_df, dimension), width="stretch")
 
 
@@ -922,81 +1559,130 @@ def render_forecasting_tab(
         st.warning("No data is available for forecasting.")
         return ForecastResult("", pd.DataFrame(), pd.DataFrame(), None, None, ["No data available."])
 
-    available_methods = ["Moving Average", "Exponential Smoothing", "Linear Regression"]
+    available_methods = AVAILABLE_FORECAST_METHODS
+    current_methods = st.session_state.get(FORECAST_METHODS_KEY, available_methods)
+    if not isinstance(current_methods, list):
+        current_methods = available_methods.copy()
+    current_methods = [method for method in current_methods if method in available_methods]
+    if not current_methods:
+        current_methods = available_methods.copy()
+    _set_session_value(FORECAST_METHODS_KEY, current_methods)
     selected_methods = help_multiselect(
         "Models to evaluate",
         "Run one or more models on the same historical split so you can compare their accuracy fairly.",
         available_methods,
-        default=available_methods,
+        default=current_methods,
+        key=FORECAST_METHODS_KEY,
     )
     if not selected_methods:
         st.warning("Select at least one forecasting method.")
         return ForecastResult("", pd.DataFrame(), pd.DataFrame(), None, None, ["No forecasting method selected."])
 
     summary_controls = st.columns(4)
-    default_primary_index = selected_methods.index("Linear Regression") if "Linear Regression" in selected_methods else 0
+    current_primary_method = st.session_state.get(FORECAST_PRIMARY_METHOD_KEY, selected_methods[0])
+    if current_primary_method not in selected_methods:
+        current_primary_method = "Linear Regression" if "Linear Regression" in selected_methods else selected_methods[0]
+        _set_session_value(FORECAST_PRIMARY_METHOD_KEY, current_primary_method)
     primary_method = help_selectbox(
         "Detailed model view",
         "Choose which model should drive the detailed chart and forecast tables below.",
         selected_methods,
         container=summary_controls[0],
-        index=default_primary_index,
+        index=selected_methods.index(current_primary_method),
+        key=FORECAST_PRIMARY_METHOD_KEY,
     )
+    _set_session_value(FORECAST_PRIMARY_METHOD_KEY, primary_method)
+
+    current_horizon = st.session_state.get(FORECAST_HORIZON_KEY, AVAILABLE_HORIZONS[0])
+    if current_horizon not in AVAILABLE_HORIZONS:
+        current_horizon = AVAILABLE_HORIZONS[0]
+    _set_session_value(FORECAST_HORIZON_KEY, current_horizon)
     horizon = int(
         help_selectbox(
             "Future horizon",
             "How many future periods the forecast should project forward.",
-            [7, 14, 30],
+            AVAILABLE_HORIZONS,
             container=summary_controls[1],
-            index=0,
+            index=AVAILABLE_HORIZONS.index(current_horizon),
+            key=FORECAST_HORIZON_KEY,
         )
     )
+    _set_session_value(FORECAST_HORIZON_KEY, horizon)
+
+    current_confidence = st.session_state.get(FORECAST_CONFIDENCE_KEY, AVAILABLE_CONFIDENCE_LEVELS[-1])
+    if current_confidence not in AVAILABLE_CONFIDENCE_LEVELS:
+        current_confidence = AVAILABLE_CONFIDENCE_LEVELS[-1]
+    _set_session_value(FORECAST_CONFIDENCE_KEY, current_confidence)
     confidence_level = float(
         help_selectbox(
             "Confidence level",
             "Higher confidence levels produce wider uncertainty bands around forecast values.",
-            [0.8, 0.9, 0.95],
+            AVAILABLE_CONFIDENCE_LEVELS,
             container=summary_controls[2],
-            index=2,
+            index=AVAILABLE_CONFIDENCE_LEVELS.index(current_confidence),
+            key=FORECAST_CONFIDENCE_KEY,
         )
     )
+    _set_session_value(FORECAST_CONFIDENCE_KEY, confidence_level)
+
     segment_candidates = detect_categorical_columns(
         filtered_df,
         exclude_columns=[col for col in ["date", "revenue", "transactions", holiday_col, promotion_col] if col],
     )
+    current_segment_dimension = st.session_state.get(FORECAST_SEGMENT_KEY, "None")
+    allowed_segments = ["None", *segment_candidates]
+    if current_segment_dimension not in allowed_segments:
+        current_segment_dimension = "None"
+    _set_session_value(FORECAST_SEGMENT_KEY, current_segment_dimension)
     segment_dimension_selection = help_selectbox(
         "Segment comparison",
         "Optionally compare future forecasts across the top segments of one selected category column.",
-        ["None", *segment_candidates],
+        allowed_segments,
         container=summary_controls[3],
-        index=0,
+        index=allowed_segments.index(current_segment_dimension),
+        key=FORECAST_SEGMENT_KEY,
     )
+    _set_session_value(FORECAST_SEGMENT_KEY, segment_dimension_selection)
 
     option_columns = st.columns(3)
     max_window = max(2, min(30, len(time_series_df) - 1))
     default_window = min(7, max_window)
+    current_window = st.session_state.get(FORECAST_WINDOW_KEY, default_window)
+    if not isinstance(current_window, int) or current_window < 2 or current_window > max_window:
+        current_window = default_window
+    _set_session_value(FORECAST_WINDOW_KEY, current_window)
     window = int(
         help_slider(
             "Moving average window",
             "How many recent periods the Moving Average model should average when making each prediction.",
             2,
             max_window,
-            default_window,
+            current_window,
             container=option_columns[0],
+            key=FORECAST_WINDOW_KEY,
         )
     )
+    _set_session_value(FORECAST_WINDOW_KEY, window)
+    current_use_trend = bool(st.session_state.get(FORECAST_USE_TREND_KEY, True))
+    _set_session_value(FORECAST_USE_TREND_KEY, current_use_trend)
     use_trend = help_checkbox(
         "Use trend",
         "Allow Exponential Smoothing to model steady upward or downward movement over time.",
         container=option_columns[1],
-        value=True,
+        value=current_use_trend,
+        key=FORECAST_USE_TREND_KEY,
     )
+    _set_session_value(FORECAST_USE_TREND_KEY, use_trend)
+    current_use_seasonality = bool(st.session_state.get(FORECAST_USE_SEASONALITY_KEY, False))
+    _set_session_value(FORECAST_USE_SEASONALITY_KEY, current_use_seasonality)
     use_seasonality = help_checkbox(
         "Use seasonality",
         "Allow Exponential Smoothing to model repeating seasonal patterns when enough history exists.",
         container=option_columns[2],
-        value=False,
+        value=current_use_seasonality,
+        key=FORECAST_USE_SEASONALITY_KEY,
     )
+    _set_session_value(FORECAST_USE_SEASONALITY_KEY, use_seasonality)
     default_period = {"Daily": 7, "Weekly": 4, "Monthly": 12}[frequency]
     seasonal_periods = default_period if use_seasonality else None
 
@@ -1224,27 +1910,39 @@ def render_anomaly_tab(time_series_df: pd.DataFrame) -> pd.DataFrame:
 
     max_window = max(2, min(90, len(time_series_df) - 1))
     control_columns = st.columns(2)
+    current_window = st.session_state.get(ANOMALY_WINDOW_KEY, min(14, max_window))
+    if not isinstance(current_window, int) or current_window < 2 or current_window > max_window:
+        current_window = min(14, max_window)
+    _set_session_value(ANOMALY_WINDOW_KEY, current_window)
     window = int(
         help_slider(
             "Rolling window",
             "How many recent periods define normal behavior for anomaly detection.",
             2,
             max_window,
-            min(14, max_window),
+            current_window,
             container=control_columns[0],
+            key=ANOMALY_WINDOW_KEY,
         )
     )
+    _set_session_value(ANOMALY_WINDOW_KEY, window)
+    current_threshold = st.session_state.get(ANOMALY_THRESHOLD_KEY, 3.0)
+    if not isinstance(current_threshold, (int, float)) or current_threshold < 1.0 or current_threshold > 5.0:
+        current_threshold = 3.0
+    _set_session_value(ANOMALY_THRESHOLD_KEY, float(current_threshold))
     threshold = float(
         help_slider(
             "Anomaly threshold (absolute z-score)",
             "Higher thresholds flag fewer, more extreme anomalies; lower thresholds flag more potential anomalies.",
             1.0,
             5.0,
-            3.0,
+            float(current_threshold),
             0.1,
             container=control_columns[1],
+            key=ANOMALY_THRESHOLD_KEY,
         )
     )
+    _set_session_value(ANOMALY_THRESHOLD_KEY, threshold)
 
     anomaly_df = detect_rolling_zscore_anomalies(
         time_series_df,

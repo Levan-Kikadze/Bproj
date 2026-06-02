@@ -1,0 +1,36 @@
+flowchart LR
+    User[SME Analyst] --> Browser[Web Browser]
+    Browser <--> App[Streamlit UI Layer\napp.py]
+
+    subgraph Core[Domain Logic Modules]
+        Prep[Data Preprocessing\nsrc/preprocessing.py]
+        Features[Feature Engineering\nsrc/features.py]
+        KPI[KPI Computation\nsrc/kpis.py]
+        Forecast[Forecasting Service\nsrc/forecasting.py]
+        Anomaly[Anomaly Detection\nsrc/anomaly_detection.py]
+        Viz[Visualization Service\nsrc/visualization.py]
+        Utils[Export and Utilities\nsrc/utils.py]
+    end
+
+    CSV[(Uploaded CSV)] --> App
+    Sample[(Bundled sample_data)] --> App
+
+    App --> Prep
+    App --> Features
+    App --> KPI
+    App --> Forecast
+    App --> Anomaly
+    App --> Viz
+    App --> Utils
+
+    Prep --> KPI
+    Prep --> Forecast
+    Prep --> Anomaly
+    Features --> Forecast
+    Forecast --> Viz
+    KPI --> Viz
+    Anomaly --> Viz
+
+    Viz --> Browser
+    Utils --> Browser
+    Browser --> Downloads[(CSV Exports)]

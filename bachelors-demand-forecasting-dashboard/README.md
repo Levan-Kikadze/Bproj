@@ -49,6 +49,7 @@ The value is not only in charts. It is in making SME analysis faster, more consi
 - Chronological 80/20 train/test evaluation with MAE and MAPE.
 - Rolling z-score anomaly detection with configurable sensitivity.
 - CSV exports for cleaned aggregated data, forecast outputs, and anomaly results.
+- Local dashboard persistence with named save/load support so users can reopen a saved dashboard without re-uploading the CSV.
 - Pytest regression coverage for preprocessing, forecasting, and anomaly detection.
 
 ## Technology Stack
@@ -90,6 +91,8 @@ streamlit run app.py
 If no CSV is uploaded, the app automatically loads `sample_data/sample_sales_data.csv`, which makes the dashboard demo-ready without extra setup.
 
 The sidebar also includes additional bundled demo datasets for targeted scenarios such as data quality issues, holiday and promotion forecasting, and anomaly detection with missing periods. See `sample_data/README.md` for a quick guide.
+
+Saved dashboards are stored locally under `bachelors-demand-forecasting-dashboard/runtime/saved_dashboards.db`. Use a deployment with persistent disk if you want saved dashboards to survive app restarts.
 
 ## Running the Tests
 
@@ -188,4 +191,3 @@ This approach is easy to explain during a presentation and appropriate for an SM
 - `docs/user_manual.md`
 - `docs/dashboard_help_guide.md`
 - `docs/reproducibility_snapshot.md`
-

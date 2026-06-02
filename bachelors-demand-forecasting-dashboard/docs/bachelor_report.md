@@ -1,360 +1,392 @@
-# Bachelor Report
+## Bachelor Report:
 
-## Project Title
-
-ForeSightSeer: AI-Driven Demand and Revenue Forecasting Dashboard for SMEs
+# ForeSightSeer: AI Driven Demand and Revenue Forecasting Dashboard for SMEs
 
 ## Abstract
 
-Small and medium-sized enterprises often store sales data in spreadsheet or CSV form, but many of them do not have a simple analytical system for validating data quality, monitoring performance, forecasting future demand, and identifying unusual sales behavior. This project addresses that gap by implementing an interactive Streamlit dashboard that converts uploaded sales data into actionable business insights.
+Small and medium sized enterprises often keep sales data in spreadsheets or CSV files. Many still need a simple way to check data quality, track sales performance, forecast demand, and find unusual sales behavior.
 
-The system focuses on interpretability and practical usability rather than on black-box machine learning. It provides data cleaning, aggregation, KPI reporting, forecasting with Moving Average, Exponential Smoothing, and Linear Regression with calendar features, rolling z-score anomaly detection, and exportable analytical outputs. The implementation is modular, testable, and supported by automated regression tests for the core business logic.
+This project solves that problem with an interactive Streamlit dashboard. You upload sales data, map the key columns, review the cleaned dataset, and turn raw rows into useful business outputs.
 
-Using the bundled sample dataset, the system processed 6,840 rows without data-loss corrections, produced total revenue of $9,444,661.18, and demonstrated that the Moving Average baseline outperformed both Exponential Smoothing and Linear Regression on the default daily evaluation setup, achieving an MAE of 1,808.04 and a MAPE of 7.88%. The project demonstrates how a lightweight, explainable analytical dashboard can support SME decision-making while remaining appropriate for a bachelor-level software and data project.
+The system uses clear methods that you can explain. It supports data cleaning, aggregation, KPI reporting, forecasting with Moving Average, Exponential Smoothing, and Linear Regression, rolling z score anomaly detection, and CSV export. The code uses reusable Python modules. Automated regression tests check the main business logic.
 
-## 1. Introduction
+With the bundled sample dataset, the system processed 6,840 rows and did not need any data loss corrections. It produced total revenue of $9,444,661.18. In the default daily evaluation setup, the Moving Average baseline performed best. It reached an MAE of 1,808.04 and a MAPE of 7.88%. These results show that a lightweight and explainable dashboard can support SME decisions while staying realistic for a bachelor level software and data project.
 
-Sales planning is a common challenge for SMEs. Many businesses record transactions regularly, but they often lack a dedicated analytical tool that helps them understand revenue patterns, identify data-quality problems, forecast short-term performance, and detect unusual sales events. Commercial analytics platforms can be expensive or overly complex for smaller organizations, while spreadsheet-only workflows make repeatable analysis difficult.
+## Introduction
 
-This project proposes a practical alternative: a lightweight dashboard that accepts CSV sales data and produces interpretable business outputs. The goal is not to build an enterprise-scale forecasting platform, but to design a transparent decision-support system that is easy to explain, easy to demonstrate, and suitable for the constraints of a bachelor project.
+Sales planning creates regular problems for SMEs. Many businesses record transactions every day, but they still need a simple analytical tool that helps them understand revenue patterns, find data quality issues, forecast short term performance, and detect unusual sales events.
 
-## 2. Problem Statement
+Commercial analytics platforms can cost too much or add too much complexity for smaller organizations. Spreadsheet only workflows also make repeatable analysis harder. They often depend on manual checks, copied formulas, and personal judgment.
 
-SMEs often have access to historical sales data but lack a simple and reliable analytical interface for:
+This project offers a practical alternative. ForeSightSeer is a lightweight dashboard that accepts CSV sales data and returns clear business outputs. The goal is to build a transparent decision support system that you can explain, test, and demonstrate within the scope of a bachelor project.
 
-- checking whether uploaded data is clean and usable,
-- monitoring core revenue KPIs,
-- forecasting short-term future demand and revenue,
-- detecting unusual sales behavior,
-- exporting analysis results for further use.
+## Problem Statement
 
-Without these capabilities, managers may rely on manual inspection, inconsistent spreadsheet formulas, or intuition, which increases the chance of poor planning and weak operational decisions.
+SMEs often have historical sales data, but they need a simple and reliable interface that helps them complete five tasks.
 
-## 3. Project Objectives
+1. Check whether uploaded data is clean and usable.
+2. Monitor core revenue KPIs.
+3. Forecast short term future demand and revenue.
+4. Detect unusual sales behavior.
+5. Export analysis results for further use.
 
-The project objectives are:
+Without these features, managers rely on manual inspection, inconsistent spreadsheet formulas, or intuition. That creates poor planning risk and weak operational decisions.
+
+## Project Objectives
+
+This project has these objectives.
 
 1. Build an interactive dashboard that accepts CSV sales data.
-2. Provide transparent preprocessing and data-quality reporting.
+2. Provide clear preprocessing and data quality reporting.
 3. Aggregate sales data at daily, weekly, and monthly levels.
-4. Calculate business KPIs that are relevant to SME revenue monitoring.
-5. Implement interpretable forecasting methods.
-6. Evaluate forecast performance using appropriate time-series metrics.
-7. Detect anomalies using an explainable statistical method.
+4. Calculate business KPIs that help SMEs monitor revenue.
+5. Use forecasting methods that users can understand.
+6. Evaluate forecast performance with suitable time series metrics.
+7. Detect anomalies with a clear statistical method.
 8. Export processed outputs for reporting and decision support.
-9. Structure the implementation as reusable Python modules with automated tests.
+9. Organize the implementation as reusable Python modules with automated tests.
 
-## 4. Scope and Functional Requirements
+## Scope and Functional Requirements
 
-The implemented system supports the following functional behavior:
+The implemented system supports these functions.
 
-- CSV upload with a raw-data preview.
-- Flexible mapping of date, revenue, optional transactions, and optional categorical dimensions.
-- Optional mapping of holiday and promotion indicator columns for forecasting.
-- Cleaning of duplicate rows, invalid dates, invalid revenue values, and negative revenue rows.
-- Explicit reporting of unique removed rows and transaction values normalized to zero.
-- Aggregation at daily, weekly, and monthly frequency.
-- KPI reporting for total revenue, average revenue, maximum revenue, minimum revenue, total transactions, average order value, and latest period-over-period growth.
-- Interactive charts for revenue trend, growth rate, category breakdown, forecast results, and anomalies.
-- Forecasting using Moving Average, Exponential Smoothing, and Linear Regression with calendar features.
-- Confidence intervals for Exponential Smoothing and Linear Regression.
-- Multi-model comparison on the same holdout split and segment-level forecast comparison.
-- Chronological 80/20 train/test evaluation using MAE and MAPE.
-- Anomaly detection using rolling z-scores.
-- CSV export of cleaned aggregated data, forecast outputs, and anomaly outputs.
+1. CSV upload with a raw data preview.
+2. Flexible mapping of date, revenue, optional transactions, and optional categorical dimensions.
+3. Optional mapping of holiday and promotion indicator columns for forecasting.
+4. Cleaning of duplicate rows, invalid dates, invalid revenue values, and negative revenue rows.
+5. Clear reporting of unique removed rows and transaction values normalized to zero.
+6. Aggregation at daily, weekly, and monthly frequency.
+7. KPI reporting for total revenue, average revenue, maximum revenue, minimum revenue, total transactions, average order value, and latest period over period growth.
+8. Interactive charts for revenue trend, growth rate, category breakdown, forecast results, and anomalies.
+9. Forecasting with Moving Average, Exponential Smoothing, and Linear Regression with calendar features.
+10. Confidence intervals for Exponential Smoothing and Linear Regression.
+11. Multi model comparison on the same holdout split and segment level forecast comparison.
+12. Chronological 80/20 train and test evaluation with MAE and MAPE.
+13. Anomaly detection with rolling z scores.
+14. CSV export of cleaned aggregated data, forecast outputs, and anomaly outputs.
 
-The project does not aim to provide real-time ingestion, multivariate machine learning, database integration, authentication, or production deployment pipelines.
+The project excludes real time ingestion, multivariate machine learning, database integration, authentication, and production deployment pipelines.
 
-## 5. Why This Problem Matters for SMEs
+## Why This Problem Matters for SMEs
 
-SMEs typically operate with smaller technical teams and tighter budgets than large enterprises. They need tools that are understandable, affordable, and fast to adopt. A dashboard that can be launched locally, fed with CSV files, and explained without advanced data-science knowledge is especially useful in this context.
+SMEs usually work with smaller technical teams and tighter budgets than large enterprises. They need tools that are easy to understand, affordable, and quick to adopt. A dashboard that runs locally, accepts CSV files, and explains its outputs in plain terms fits that need.
 
-The value becomes clearer when viewed as a real workflow rather than as a feature list. A small retailer, wholesaler, or service business may export monthly sales from a point-of-sale or accounting system, open a spreadsheet, search manually for unusual numbers, and then estimate next month's demand using rough averages or intuition. That workflow is slow, inconsistent, and difficult to defend in front of a supervisor, owner, or investor.
+You can see the value through a simple workflow. A small retailer, wholesaler, or service business may export monthly sales from a point of sale or accounting system. Then a manager opens a spreadsheet, searches for unusual values, and estimates next month’s demand from rough averages or intuition. That workflow takes time, changes from person to person, and becomes hard to defend in front of an owner, supervisor, or investor.
 
-ForeSightSeer changes that flow in four practical ways. First, the Data Quality tab lets the user verify whether the uploaded CSV is safe to trust before any KPI or forecast is interpreted. Second, the Overview tab turns raw rows into a short performance summary that can be discussed quickly. Third, the Forecasting tab provides a short-term demand view with transparent model comparison, so the user can say not only what the forecast is, but also how accurate the tested models were on held-out history. Fourth, the anomaly workflow highlights unusual periods that deserve explanation before an SME reacts operationally.
+ForeSightSeer improves that workflow in four practical ways.
 
-An illustrative example is a manager preparing the next month's inventory order. Without the dashboard, that manager may spend one to two hours manually checking spreadsheets, recalculating totals, and guessing whether the latest spike is real. With the dashboard, the same manager can upload a CSV, confirm data quality, compare forecast options, and leave with a forward-looking table that supports a more defensible planning conversation. This is an illustrative usage scenario rather than a measured ROI claim, but it reflects the practical value the project is designed to deliver.
+1. The Data Quality tab helps you check whether the uploaded CSV is safe to trust before you read any KPI or forecast.
+2. The Overview tab turns raw rows into a short performance summary.
+3. The Forecasting tab gives you a short term demand view with transparent model comparison. You can explain the forecast and show how each model performed on held out history.
+4. The anomaly workflow highlights unusual periods that deserve review before an SME makes operational decisions.
 
-The emphasis on interpretability is therefore important for both trust and action. SME users are more likely to use a system when they can understand how it cleans data, how it calculates KPIs, how it evaluates forecasts, and why a value was flagged as anomalous.
+Consider a manager preparing next month’s inventory order. Without the dashboard, that manager may spend one to two hours checking spreadsheets, recalculating totals, and guessing whether the latest spike reflects real demand. With the dashboard, the manager uploads a CSV, confirms data quality, compares forecast options, and exports a forward looking table for a planning discussion. This example shows the practical value the project aims to deliver. It does not claim measured ROI.
 
-## 6. System Architecture
+Interpretability matters because users need trust before they act. SME users are more likely to use a system when they can see how it cleans data, calculates KPIs, evaluates forecasts, and flags anomalies.
 
-The application follows a modular Python design.
+## System Architecture
 
-- `app.py` provides the Streamlit interface and orchestrates the workflow.
-- `src/features.py` creates calendar, holiday, and promotion features.
-- `src/preprocessing.py` handles validation, cleaning, aggregation, and data-quality reporting.
-- `src/kpis.py` calculates KPI values and growth rates.
-- `src/forecasting.py` implements Moving Average, Exponential Smoothing, Linear Regression, train/test splitting, and forecast metrics.
-- `src/anomaly_detection.py` implements rolling z-score anomaly detection.
-- `src/visualization.py` builds Plotly charts.
-- `src/utils.py` provides formatting and export helpers.
-- `tests/` contains automated regression tests for the core logic.
+The application uses a modular Python design.
 
-This separation improves readability, reuse, and maintainability. It also supports testing because most of the business logic is kept outside the Streamlit UI layer.
+Files and folders
 
-## 7. Data Preprocessing Design
+app.py
+Provides the Streamlit interface and controls the user workflow.
 
-The preprocessing pipeline performs the following steps:
+src/features.py
+Creates calendar, holiday, and promotion features.
+
+src/preprocessing.py
+Handles validation, cleaning, aggregation, and data quality reporting.
+
+src/kpis.py
+Calculates KPI values and growth rates.
+
+src/forecasting.py
+Implements Moving Average, Exponential Smoothing, Linear Regression, train and test splitting, and forecast metrics.
+
+src/anomaly_detection.py
+Implements rolling z score anomaly detection.
+
+src/visualization.py
+Builds Plotly charts.
+
+src/utils.py
+Provides formatting and export helpers.
+
+tests/
+Contains automated regression tests for the core logic.
+
+This structure keeps the code readable and reusable. It also makes testing easier because most business logic sits outside the Streamlit UI layer.
+
+## Data Preprocessing Design
+
+The preprocessing pipeline follows these steps.
 
 1. Validate the selected date and revenue columns.
 2. Remove exact duplicate rows.
-3. Standardize column names to internal names such as `date`, `revenue`, and optionally `transactions`.
+3. Standardize column names to internal names such as date, revenue, and transactions when available.
 4. Convert dates to pandas datetime values.
 5. Convert revenue and transaction columns to numeric values.
 6. Remove rows with invalid dates.
-7. Remove rows with missing or non-numeric revenue values.
+7. Remove rows with missing or non numeric revenue values.
 8. Remove negative revenue rows by default.
 9. Normalize invalid transaction values to zero.
 10. Clip negative transaction values to zero.
-11. Sort the cleaned data chronologically.
-12. Return a data-quality report containing counts, missing values, and date range.
+11. Sort the cleaned data by date.
+12. Return a data quality report with counts, missing values, and the date range.
 
-One important design detail is that the dashboard reports unique removed rows after deduplication, rather than summing overlapping issue counts in a misleading way. This makes the Data Quality tab easier to defend during evaluation.
+One design choice improves clarity. The dashboard reports unique removed rows after deduplication. It avoids misleading totals caused by overlapping issue counts. This makes the Data Quality tab easier to explain during evaluation.
 
-The final implementation also improves robustness around upload and mapping mistakes. It warns the user when an uploaded CSV has no obvious date-like or revenue-like column names, checks whether the selected date and revenue fields look parseable in sample rows, prevents the same column from being used as both date and revenue, and explains more clearly when all rows disappear during cleaning because the wrong field was mapped.
+The final implementation also handles upload and mapping mistakes more safely. It warns you when an uploaded CSV has no obvious date like or revenue like column names. It checks whether the selected date and revenue fields look parseable in sample rows. It blocks the same column from being used as both date and revenue. It also explains the issue clearly when all rows disappear during cleaning because you mapped the wrong field.
 
-## 8. Aggregation and KPI Design
+## Aggregation and KPI Design
 
-After cleaning, the system aggregates data at the selected time level:
+After cleaning, the system aggregates data at the selected time level.
 
-- Daily
-- Weekly
-- Monthly
+1. Daily.
+2. Weekly.
+3. Monthly.
 
-Revenue is summed for each period, and transactions are also summed when a transactions column is present. Optional holiday or promotion columns can also be preserved and aggregated so the forecasting module can use them as event signals. Based on the aggregated data, the KPI module calculates:
+For each period, the system sums revenue. When the dataset includes a transactions column, it also sums transactions. Optional holiday or promotion columns can stay in the aggregated dataset, so the forecasting module can use them as event signals.
 
-- Total revenue
-- Average revenue
-- Maximum revenue
-- Minimum revenue
-- Total transactions
-- Average order value
-- Latest period-over-period growth
+The KPI module then calculates these indicators.
 
-These indicators give users a compact but useful overview of current business performance.
+1. Total revenue.
+2. Average revenue.
+3. Maximum revenue.
+4. Minimum revenue.
+5. Total transactions.
+6. Average order value.
+7. Latest period over period growth.
 
-## 9. Forecasting Methodology
+These indicators give you a compact view of business performance.
 
-The project uses three interpretable forecasting methods.
+## Forecasting Methodology
+
+The project uses three forecasting methods that users can understand and explain.
 
 ### 9.1 Moving Average
 
-Moving Average is used as a simple baseline. The model predicts each next value from the average of the most recent observations. During evaluation, it uses walk-forward forecasting so each new actual test value is added back into the history before predicting the next step.
+Moving Average acts as a simple baseline. The model predicts the next value from the average of the most recent observations.
 
-This method is easy to understand and useful for relatively stable short-term patterns.
+During evaluation, it uses walk forward forecasting. After each test period, the actual value joins the history before the model predicts the next period. This setup reflects a realistic forecasting process because the model only uses information that would already be available at prediction time.
+
+This method works well for stable short term patterns and gives users a clear baseline for comparison.
 
 ### 9.2 Exponential Smoothing
 
-Exponential Smoothing is implemented through `statsmodels` and supports:
+The system implements Exponential Smoothing with statsmodels. It supports two options.
 
-- optional additive trend,
-- optional additive seasonality when sufficient training data is available.
+1. Additive trend.
+2. Additive seasonality when the training data has enough history.
 
-This method gives more weight to recent observations and can adapt better than Moving Average when a trend exists. However, it is also more sensitive to short, noisy, or irregular histories.
+This method gives more weight to recent observations and can adapt when a trend exists. It can struggle with short, noisy, or irregular histories. The dashboard handles these cases with warnings and fallback behavior where needed.
 
 ### 9.3 Linear Regression with Calendar Features
 
-The final version also includes an interpretable Linear Regression model. Its feature matrix includes a time index, calendar effects, built-in holiday indicators, and optional uploaded holiday or promotion flags. This model is useful when demand is influenced by regular weekly or monthly patterns or by known promotional periods.
+The final version also includes an interpretable Linear Regression model. Its feature matrix includes a time index, calendar effects, built in holiday indicators, and optional uploaded holiday or promotion flags.
 
-The dashboard exposes the learned coefficients, which strengthens the explainability of the forecasting module during the final defense.
+This model helps when demand follows weekly or monthly patterns, or when known promotional periods affect sales. The dashboard exposes the learned coefficients, which improves explainability during the final defense.
 
 ### 9.4 Evaluation Strategy
 
-The project uses a chronological 80/20 train/test split because time-series observations should not be shuffled. The first 80% of periods are used for training and the final 20% for testing.
+The project uses a chronological 80/20 train and test split because time series observations must keep their order. The first 80% of periods train the model. The final 20% test it.
 
-Two evaluation metrics are reported:
+The dashboard reports two evaluation metrics.
 
-- MAE: the average absolute forecast error.
-- MAPE: the average percentage forecast error, excluding rows where actual revenue is zero.
+1. MAE, which measures the average absolute forecast error.
+2. MAPE, which measures the average percentage forecast error and excludes rows where actual revenue equals zero.
 
-If all valid actual values are zero, MAPE is reported as unavailable rather than producing an invalid result.
+If all valid actual values equal zero, the system reports MAPE as unavailable. This avoids an invalid percentage result.
 
-The Forecasting tab can evaluate all available models on the same chronological split and compare them directly using MAE and MAPE. It can also compare future forecasts across major product or store segments.
+The Forecasting tab can evaluate all available models on the same chronological split and compare them directly with MAE and MAPE. It can also compare future forecasts across major product or store segments.
 
 ### 9.5 Handling Missing Periods
 
-Before forecasting, the system creates a regular time series and fills missing periods with zero revenue. This prevents model failures and preserves frequency consistency, although it may not be the correct business interpretation in every real dataset.
+Before forecasting, the system creates a regular time series and fills missing periods with zero revenue. This prevents model failures and keeps frequency consistent. You still need to interpret this carefully. In some real datasets, a missing period may mean missing data rather than zero sales.
 
 ## 10. Anomaly Detection Methodology
 
-The dashboard uses rolling z-score anomaly detection. The current observation is compared against a baseline built from previous observations only. The method:
+The dashboard uses rolling z score anomaly detection. It compares the current observation with a baseline built only from previous observations.
 
-1. shifts revenue by one period,
-2. computes a rolling mean and rolling standard deviation,
-3. calculates a z-score,
-4. flags observations whose absolute z-score exceeds a user-selected threshold.
+The method follows these steps.
 
-This method is explainable and suitable for a bachelor-level prototype because the reason for each anomaly flag can be described clearly.
+1. Shift revenue by one period.
+2. Compute a rolling mean from previous periods.
+3. Compute a rolling standard deviation from previous periods.
+4. Calculate a z score for the current observation.
+5. Flag observations where the absolute z score exceeds the selected threshold.
+
+This method fits the project because users can understand why each point was flagged. It also avoids using future observations to judge the current period.
 
 ## 11. Implementation Summary
 
-The user workflow in the final system is as follows:
+The final user workflow works like this.
 
 1. Upload a CSV file or use the bundled sample dataset.
 2. Map the relevant columns.
-3. Select aggregation frequency.
-4. Optionally apply categorical filters.
+3. Select the aggregation frequency.
+4. Apply categorical filters when needed.
 5. Review the Data Quality tab.
-6. Review the KPI and trend outputs in the Overview tab.
+6. Review KPI and trend outputs in the Overview tab.
 7. Run forecasting and compare methods.
 8. Inspect anomalies.
 9. Export the generated outputs.
 
-The application was built in Streamlit because it provides a fast way to turn Python analysis into an interactive interface without requiring a separate frontend stack.
+The project uses Streamlit because it turns Python analysis into an interactive dashboard quickly. It also avoids the extra complexity of a separate frontend stack.
 
 ### 11.1 Design Rationale and Alternative Approaches
 
-Several alternative implementation paths were considered implicitly in the project design.
+The project considered several implementation paths.
 
-- A full frontend/backend architecture was not chosen because it would increase delivery complexity without adding much value for a bachelor-level analytical dashboard.
-- More advanced forecasting models, such as multivariate machine-learning methods or deep-learning approaches, were not prioritized because they would reduce interpretability, require more feature engineering, and make evaluation harder to explain to SME users.
-- The final design therefore favors transparent statistical methods, modular Python components, and a fast interactive interface.
+A full frontend and backend architecture would add delivery complexity without enough value for a bachelor level analytical dashboard. Advanced forecasting models would require more feature engineering, reduce transparency, and make evaluation harder to explain to SME users.
 
-This decision is justified by the project constraints: one-semester scope, SME-focused usability, and the need for a defendable methodology during committee evaluation.
+The final design uses clear statistical methods, modular Python components, and a fast interactive interface. This choice matches the project constraints: one semester of work, SME focused usability, and a methodology that you can defend during committee evaluation.
 
 ### 11.2 Innovation and Technical Depth
 
-The technical depth of the project does not come from inventing a new forecasting algorithm. Instead, it comes from integrating several analytical capabilities into a coherent and explainable product:
+The project does not depend on a new forecasting algorithm. Its technical depth comes from combining several analytical capabilities into one clear product.
 
-- flexible CSV column mapping rather than a rigid input schema,
-- transparent preprocessing with explicit data-quality reporting,
-- walk-forward Moving Average evaluation,
-- configurable Exponential Smoothing with warning handling,
-- rolling z-score anomaly detection based on historical context only,
-- exportable analytical outputs,
-- automated regression tests for the most important analytical logic.
+1. Flexible CSV column mapping instead of a rigid input schema.
+2. Transparent preprocessing with explicit data quality reporting.
+3. Walk forward Moving Average evaluation.
+4. Configurable Exponential Smoothing with warning handling.
+5. Rolling z score anomaly detection based only on historical context.
+6. Exportable analytical outputs.
+7. Automated regression tests for the most important analytical logic.
 
-The project is therefore innovative at the product-design level: it combines data validation, KPI monitoring, forecasting, anomaly detection, and export in a single tool that remains understandable to non-expert users.
+The project contributes at the product design level. It combines data validation, KPI monitoring, forecasting, anomaly detection, and export in one tool while keeping the workflow understandable for non expert users.
 
 ### 11.3 Ethical and Social Considerations
 
-Although the project is primarily technical, it also involves practical and ethical considerations:
+The project includes practical and ethical considerations.
 
-- business data may contain sensitive revenue information, so local execution and CSV-based processing reduce unnecessary exposure,
-- analytical outputs should support managerial judgment rather than replace it,
-- anomalies and forecasts can be useful indicators, but they should not be treated as guaranteed truths,
-- the bundled sample dataset is synthetic and is clearly separated from real business data.
+1. Business data may contain sensitive revenue information, so local execution and CSV based processing reduce unnecessary exposure.
+2. Analytical outputs should support managerial judgment.
+3. Anomalies and forecasts give useful signals, but users should review them before making decisions.
+4. The bundled sample dataset is synthetic and clearly separated from real business data.
 
-These considerations are important because responsible analytical systems should communicate uncertainty and avoid misleading users.
+Responsible analytical systems should show uncertainty and avoid misleading users. This project follows that approach through clear metrics, warnings, and explainable methods.
 
 ## 12. Evaluation Results Based on the Bundled Sample Dataset
 
-The bundled sample dataset is synthetic and is intended only for demonstration and evaluation of the application behavior.
+The bundled sample dataset is synthetic. It exists only for demonstration and application evaluation.
 
 ### 12.1 Data Quality Results
 
-Using the current implementation on the sample dataset produced the following preprocessing results:
+Using the current implementation on the sample dataset produced these preprocessing results.
 
-| Metric | Value |
-| --- | ---: |
-| Raw rows | 6,840 |
-| Clean rows | 6,840 |
-| Duplicates removed | 0 |
-| Unique invalid rows removed | 0 |
-| Invalid dates removed | 0 |
-| Invalid revenue rows removed | 0 |
-| Negative revenue rows removed | 0 |
-| Invalid transactions normalized to 0 | 0 |
-| Negative transactions clipped to 0 | 0 |
-| Date range | 2024-01-01 to 2025-03-31 |
+Raw rows: 6,840
+Clean rows: 6,840
+Duplicates removed: 0
+Unique invalid rows removed: 0
+Invalid dates removed: 0
+Invalid revenue rows removed: 0
+Negative revenue rows removed: 0
+Invalid transactions normalized to 0: 0
+Negative transactions clipped to 0: 0
+Date range: 2024-01-01 to 2025-03-31
 
-These results are expected because the sample dataset is designed to be demonstration-ready.
+These results match expectations because the sample dataset was designed for demonstration.
 
 ### 12.2 KPI Results
 
-With daily aggregation on the sample dataset, the dashboard produced the following KPI values:
+With daily aggregation on the sample dataset, the dashboard produced these KPI values.
 
-| KPI | Value |
-| --- | ---: |
-| Total revenue | $9,444,661.18 |
-| Average revenue | $20,711.98 |
-| Maximum revenue | $29,950.93 |
-| Minimum revenue | $14,290.94 |
-| Total transactions | 156,782 |
-| Average order value | $60.24 |
-| Latest revenue growth | -12.19% |
+Total revenue: $9,444,661.18
+Average revenue: $20,711.98
+Maximum revenue: $29,950.93
+Minimum revenue: $14,290.94
+Total transactions: 156,782
+Average order value: $60.24
+Latest revenue growth: -12.19%
 
 ### 12.3 Forecasting Results
 
-The default daily forecast evaluation produced the following comparison:
+The default daily forecast evaluation produced this comparison.
 
-| Method | Test periods | MAE | MAPE |
-| --- | ---: | ---: | ---: |
-| Moving Average (window = 7) | 92 | 1,808.04 | 7.88% |
-| Exponential Smoothing (trend enabled, no seasonality) | 92 | 12,314.36 | 54.27% |
-| Linear Regression (calendar features) | 92 | 161,362.57 | 710.53% |
+Moving Average, window = 7
+Test periods: 92
+MAE: 1,808.04
+MAPE: 7.88%
 
-On the bundled sample dataset, the Moving Average baseline performed better than both Exponential Smoothing and Linear Regression under the default settings. This result strengthens the academic discussion because it shows that the project does not assume a newer model is automatically better. Instead, it evaluates several interpretable alternatives and presents the measured outcome transparently.
+Exponential Smoothing, trend enabled, no seasonality
+Test periods: 92
+MAE: 12,314.36
+MAPE: 54.27%
+
+Linear Regression, calendar features
+Test periods: 92
+MAE: 161,362.57
+MAPE: 710.53%
+
+On the bundled sample dataset, Moving Average performed better than Exponential Smoothing and Linear Regression under the default settings. This result strengthens the academic discussion because it shows that the project evaluates models instead of assuming that a more complex method will perform better.
 
 ### 12.4 Anomaly Detection Results
 
-Using the default anomaly settings on the sample dataset (`window = 14`, `threshold = 3.0`) produced:
+Using the default anomaly settings on the sample dataset, with window = 14 and threshold = 3.0, the system produced these results.
 
-- 3 detected anomalies.
-- The first detected anomaly occurred on 2024-10-20.
-- Revenue on that date was $22,999.46.
-- The corresponding z-score was 4.54.
+1. It detected 3 anomalies.
+2. The first detected anomaly occurred on 2024-10-20.
+3. Revenue on that date was $22,999.46.
+4. The corresponding z score was 4.54.
 
-This demonstrates that the anomaly module can highlight unusually high or low sales behavior in a way that remains easy to explain to users.
+This shows that the anomaly module can highlight unusual sales behavior in a way users can explain.
 
 ### 12.5 Testing Results
 
 The project includes automated tests for the core business logic. The tests cover preprocessing behavior, aggregation, feature engineering, MAPE edge cases, forecasting output shape, confidence interval output, warning behavior on insufficient data, anomaly detection output structure, and transaction normalization reporting.
 
-The final version extends this coverage with additional imperfect-data and error-handling scenarios that are relevant to the evaluation rubric. These include missing required columns, datasets where all rows are removed during cleaning, invalid aggregation or forecasting parameters, zero-horizon forecast requests, duplicate date or revenue mapping, suspicious uploaded date or revenue selections, and clearer user-facing messaging when a CSV has headers but no usable rows.
+The final version adds more coverage for imperfect data and error handling. These tests cover missing required columns, datasets where all rows disappear during cleaning, invalid aggregation or forecasting parameters, zero horizon forecast requests, duplicate date or revenue mapping, suspicious uploaded date or revenue selections, and clearer user facing messages when a CSV has headers but no usable rows.
 
-The test suite can be executed from the project root after activating the virtual environment with:
+You can run the test suite from the project root after activating the virtual environment.
 
-```bash
 pytest
-```
 
-## 13. Strengths of the Final System
+### 13. Strengths of the Final System
 
-The main strengths of the final implementation are:
+The final implementation has these main strengths.
 
-- interpretable methodology,
-- modular code organization,
-- transparent data-quality reporting,
-- automated test coverage for core logic,
-- multi-model evaluation instead of a single forecast path,
-- useful visual outputs for a live presentation,
-- export functionality for practical use.
+1. Clear and explainable methodology.
+2. Modular code organization.
+3. Transparent data quality reporting.
+4. Automated test coverage for core logic.
+5. Multi model evaluation instead of one forecast path.
+6. Useful visual outputs for a live presentation.
+7. Export functionality for practical use.
 
-These strengths make the project appropriate for both academic evaluation and real demonstration.
+These strengths make the project suitable for academic evaluation and live demonstration. They also support the business case for SME use because the system helps users judge whether the outputs are reliable enough for a decision.
 
-They also strengthen the business case for SME use because the system does not only produce analytical outputs. It also helps the user judge whether those outputs are reliable enough to support a decision.
+14. Limitations
 
-## 14. Limitations
+The final system has clear limitations.
 
-The final system also has clear limitations:
+1. Moving Average and Exponential Smoothing use only historical revenue.
+2. Linear Regression adds calendar structure plus optional holiday and promotion indicators, but it still excludes richer external drivers such as marketing spend, pricing, and weather.
+3. Filling missing periods with zero revenue may not match every real business case.
+4. Exponential Smoothing can perform poorly on irregular or highly intermittent data.
+5. Linear Regression can perform poorly when calendar or event features do not explain revenue variation.
+6. The dashboard supports interactive analysis instead of automated production forecasting.
+7. The project does not include authentication, a database, or real time ingestion.
 
-- Moving Average and Exponential Smoothing are univariate and use only historical revenue.
-- Linear Regression adds calendar structure plus optional holiday and promotion indicators, but richer external drivers such as marketing spend, pricing, and weather are still not modeled.
-- Missing periods are filled with zero revenue, which may not match every real business interpretation.
-- Exponential Smoothing may perform poorly on irregular or highly intermittent data.
-- Linear Regression may perform poorly when the observed revenue variation is not well explained by calendar or event features.
-- The dashboard is designed for interactive analysis, not automated production forecasting.
-- The project does not include authentication, a database, or real-time ingestion.
+Stating these limitations strengthens the final thesis or defense because it shows that the project treats results carefully.
 
-These limitations should be stated honestly in the final thesis or defense because doing so strengthens the credibility of the project.
+15. Future Work
 
-## 15. Future Work
+Future work can improve the system in these ways.
 
-Several improvements could be made in future work:
-
-1. Add custom business-specific holiday calendars instead of relying only on the built-in calendar logic.
+1. Add custom business specific holiday calendars instead of relying only on built in calendar logic.
 2. Include richer causal drivers such as pricing, discounts, marketing spend, and weather.
-3. Add additional interpretable forecasting models designed for intermittent demand.
-4. Add export bundles and summary reporting for segment-level forecast comparisons.
-5. Add deployment guidance for cloud hosting.
-6. Expand evaluation with rolling-origin backtesting across more datasets.
+3. Add more interpretable forecasting models for intermittent demand.
+4. Add export bundles and summary reports for segment level forecast comparisons.
+5. Add guidance for cloud hosting.
+6. Expand evaluation with rolling origin backtesting across more datasets.
 
-## 16. Conclusion
+16. Conclusion
 
-This project delivers a practical and interpretable dashboard for SME sales analysis. It combines data cleaning, KPI monitoring, forecasting, anomaly detection, and export into a single interface that can be explained clearly during a bachelor-project presentation.
+This project delivers a practical and explainable dashboard for SME sales analysis. It combines data cleaning, KPI monitoring, forecasting, anomaly detection, and export in one interface. You can explain the workflow clearly during a bachelor project presentation.
 
-The final implementation aligns with the project goal of building an accessible decision-support tool rather than an overly complex predictive platform. The use of modular Python code, transparent statistical methods, and automated tests makes the system technically coherent and academically defendable. The evaluation on the bundled sample dataset shows that the dashboard works end to end and produces measurable results that can be discussed critically.
+The final implementation matches the project goal: build an accessible decision support tool with clear methods and measurable outputs. Modular Python code, transparent statistical methods, and automated tests make the system technically coherent and academically defensible.
 
-Overall, the project demonstrates that a focused, well-documented, and interpretable analytical system can provide meaningful value to SMEs while remaining realistic within the scope of a bachelor project. Its main contribution is not a new forecasting algorithm, but a practical workflow that helps a smaller business move from manual spreadsheet checking toward more transparent and data-backed short-term decisions.
+The evaluation on the bundled sample dataset shows that the dashboard works end to end and produces results that you can discuss critically. The main contribution is a practical workflow that helps a smaller business move from manual spreadsheet checking to clearer and more data backed short term decisions.

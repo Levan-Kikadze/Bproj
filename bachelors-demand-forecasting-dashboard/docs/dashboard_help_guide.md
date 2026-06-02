@@ -1,21 +1,21 @@
 # Dashboard Help Guide
 
-ForeSightSeer user guide for dashboard reading and demo prep.
+ForeSightSeer user guide for reading dashboards and preparing demos.
 
-## Purpose of This Guide
+Purpose of This Guide
 
-Use this guide when you're new to data analysis, charts, or forecasting. It explains what each dashboard section means in plain language.
+Use this guide when you're new to data analysis, charts, or forecasting. You'll learn what each dashboard section means and how to explain it clearly.
 
-Inside the app, look for the small i buttons next to section titles. They give short explanations beside each chart or table. This guide gives you the full version.
+In the app, use the small information buttons next to section titles. They give you short notes beside each chart or table. This guide gives you the full version.
 
-## Before You Start
+Before You Start
 
-The dashboard works with two data sources.
+The dashboard uses two data sources.
 
-1. Bundled demo datasets. Use these built in practice datasets to show clean analysis, data quality issues, holiday effects, promotion effects, and anomalies.
+1. Bundled demo datasets. Use these built-in practice datasets to show clean analysis, data quality issues, holiday effects, promotion effects, and anomalies.
 2. Uploaded CSV. Use your own file when you want to analyze real business data.
 
-For useful results, your dataset needs at least these columns.
+Your dataset needs these columns for useful results.
 
 1. One date column.
 2. One revenue or sales column.
@@ -25,22 +25,35 @@ These optional columns make the dashboard more useful.
 1. Transactions or order count.
 2. Holiday indicator.
 3. Promotion indicator.
-4. Category columns such as store, product, product category, or region.
+4. Category columns, such as store, product, product category, or region.
 
-## Dataset Source and Column Mapping
+Dataset Source and Column Mapping
 
 Dataset Source
 
-The Dataset source selector decides where the dashboard gets data.
+Use the Dataset source selector to choose where the dashboard gets data.
 
-1. Bundled demo dataset. Choose this when you want to learn the app or show features.
+1. Bundled demo dataset. Choose this when you want to learn the app or show its features.
 2. Upload CSV. Choose this when you want to analyze your own business data.
 
-Start with a bundled dataset if you're still learning how the app works.
+Start with a bundled dataset while you're learning the app.
+
+Saving and Reopening Dashboards
+
+Use the Save Dashboard panel after the charts load.
+
+1. Give the current dashboard a name.
+2. Click Save dashboard to store the uploaded CSV snapshot plus the current widget state.
+3. Switch the Dataset source selector to Saved dashboard when you want to reopen a previously saved dashboard.
+4. Pick a saved dashboard from the dropdown and click Load selected dashboard.
+
+This lets you return to the same mappings, filters, and analysis settings without uploading the CSV again.
+
+Saved dashboards live in a local SQLite file on the app server. They require persistent disk storage to survive restarts.
 
 Bundled Demo Dataset Selector
 
-When you use bundled mode, choose the practice dataset that fits your goal.
+In bundled mode, choose the practice dataset that fits your goal.
 
 1. Full clean sample. Use this for the normal full demo.
 2. Data quality issues showcase. Use this to explain duplicates, missing values, invalid dates, and removed rows.
@@ -54,23 +67,23 @@ Column mapping tells the app what each field means.
 1. Date column. The time field for charts and forecasts.
 2. Revenue column. The numeric sales or revenue field.
 3. Transactions column. An optional count of orders or transactions.
-4. Holiday column. An optional yes or no indicator for holiday periods.
-5. Promotion column. An optional yes or no indicator for promotions or campaigns.
+4. Holiday column. An optional yes or no field for holiday periods.
+5. Promotion column. An optional yes or no field for promotions or campaigns.
 6. Filter and group columns. Category fields for filters and breakdown charts.
 
-Check the mapping first when a chart looks strange. Wrong mapping often causes confusing results.
+Check the mapping first when a chart looks strange. Wrong mapping often creates confusing results.
 
-The app warns you early when it cannot find clear date or revenue column names. It also warns you when sampled date or revenue values fail to parse, or when you select the same field as both date and revenue. Treat those warnings as stop signs. Fix them before you interpret results.
+The app warns you when it cannot find clear date or revenue column names. It also warns you when sample date or revenue values fail to parse, or when you select the same field as both date and revenue. Treat those warnings as stop signs. Fix them before you read the results.
 
-## Aggregation and Filters
+Aggregation and Filters
 
 Aggregation Frequency
 
-Aggregation controls the time level of the analysis.
+Aggregation sets the time level for the analysis.
 
-1. Daily. Use this for the most detail. You’ll see more noise and short changes.
-2. Weekly. Use this for a smoother view and medium level trend checks.
-3. Monthly. Use this for the highest level summary and broad planning.
+1. Daily. Use this when you need the most detail. You'll see more noise and short-term changes.
+2. Weekly. Use this when you want a smoother view and medium-level trend checks.
+3. Monthly. Use this when you need a high-level summary for planning.
 
 When you change aggregation, you change every chart and KPI. Average revenue per day means something different from average revenue per month.
 
@@ -78,7 +91,7 @@ Filters
 
 Filters narrow the data before the dashboard calculates charts, KPIs, forecasts, and anomalies.
 
-The dashboard always answers this question.
+The dashboard answers this question.
 
 What do the results look like for the data you've selected?
 
@@ -90,7 +103,7 @@ Use filters when you want to answer questions like these.
 
 Check active filters when results look too low or too high.
 
-## Raw Data Preview
+Raw Data Preview
 
 The raw preview shows your data before cleaning.
 
@@ -102,7 +115,7 @@ Use it to check these things.
 4. Category names use consistent spelling.
 5. The expected columns exist.
 
-This preview shows the starting data. The dashboard still needs to clean it.
+This preview shows the starting data. The dashboard still cleans it before analysis.
 
 ## Overview Tab
 
@@ -124,7 +137,7 @@ The KPI cards give you a fast performance snapshot.
 
 Use these tips when you read the KPIs.
 
-1. Check growth as well as total revenue. High total revenue can still hide weak recent performance.
+1. Check growth and total revenue. High total revenue can hide weak recent performance.
 2. Look at the gap between maximum and minimum revenue. A large gap can point to volatility or seasonality.
 3. Trust average order value only when transaction data looks accurate.
 
@@ -138,9 +151,9 @@ Read it this way.
 2. Use the height of the line to judge revenue level.
 3. Look for upward movement, downward movement, repeating waves, or sudden breaks.
 
-Use it to spot trend direction, stability, seasonality, and shock events.
+Use this chart to spot trend direction, stability, seasonality, and shock events.
 
-Avoid direct comparison with the breakdown bar chart. The trend chart shows time. The bar chart shows segments.
+Use the trend chart for time changes. Use the breakdown chart for segment comparisons.
 
 Revenue Growth Rate Chart
 
@@ -152,7 +165,7 @@ Read it this way.
 2. Values below zero mean revenue decreased.
 3. Values far from zero mean the change was stronger.
 
-Use it to find acceleration, slowdown, unstable periods, and sudden trend changes.
+Use this chart to find acceleration, slowdown, unstable periods, and sudden trend changes.
 
 Revenue Breakdown Chart
 
@@ -163,13 +176,13 @@ Read it this way.
 1. A taller bar means higher revenue contribution.
 2. A shorter bar means lower revenue contribution.
 
-Use it to compare segments, find the strongest and weakest contributors, and see where revenue is concentrated.
+Use this chart to compare segments, find the strongest and weakest contributors, and see where revenue is concentrated.
 
 Use the trend chart when you need to judge movement over time.
 
-## Data Quality Tab
+Data Quality Tab
 
-This tab explains how the dashboard cleaned your data before analysis.
+This tab shows how the dashboard cleaned your data before analysis.
 
 Business question it answers. Can you trust this dataset enough to act on the results?
 
@@ -192,7 +205,7 @@ When you provide a transactions column, you also see these fields.
 
 Use these tips.
 
-1. A few removed rows are normal in messy business data.
+1. Expect a few removed rows in messy business data.
 2. Explain data quality before forecasts when the dashboard removes many rows.
 3. Check transaction corrections because they affect average order value.
 
@@ -200,7 +213,7 @@ Missing Values Table
 
 This table counts missing cells by original column.
 
-Use it to find weak parts of the dataset. Missing values in descriptive columns may be acceptable. Missing values in revenue or date columns are more serious.
+Use it to find weak parts of the dataset. Missing values in descriptive columns may be acceptable. Missing values in revenue or date columns need attention.
 
 Cleaned Data Preview
 
@@ -246,15 +259,15 @@ Key fields.
 
 1. MAE. Average absolute error. Lower is better.
 2. MAPE. Average percentage error. Lower is better.
-3. test periods. Number of historical periods used for evaluation.
-4. future periods. Number of future periods in the forecast.
-5. warnings. Problems or limits that affected the model.
+3. Test periods. Number of historical periods used for evaluation.
+4. Future periods. Number of future periods in the forecast.
+5. Warnings. Problems or limits that affected the model.
 
 Use these tips.
 
 1. Compare MAE first.
 2. Use MAPE for relative error, but watch out when actual values are small.
-3. Read model warnings before you trust the forecast. A model can still run and still need careful interpretation.
+3. Read model warnings before you trust the forecast. A model can run and still need careful interpretation.
 
 Forecast Chart
 
@@ -263,11 +276,11 @@ This chart shows actual history, test predictions, and future forecasts together
 Read it this way.
 
 1. Historical line means known actual revenue.
-2. Test forecast shows how the model performed on held out history.
+2. Test forecast shows how the model performed on held-out history.
 3. Future forecast shows projected unknown periods.
 4. Interval bands show the forecast range.
 
-Use it to check whether the model follows real behavior, whether it predicts too high or too low, and how wide the future range is.
+Use this chart to check whether the model follows real behavior, predicts too high or too low, and shows a narrow or wide future range.
 
 Test Forecast Table
 
@@ -324,7 +337,7 @@ Controls
 Use these controls.
 
 1. Rolling window. Choose how many previous periods define normal behavior.
-2. Anomaly threshold. Choose how extreme the z score must be before the dashboard flags a point.
+2. Anomaly threshold. Choose how extreme the z-score must be before the dashboard flags a point.
 
 Use these tips.
 
@@ -340,7 +353,7 @@ Read it this way.
 1. The main line shows revenue.
 2. Red markers show points that look unusual compared with recent history.
 
-An anomaly does not always mean an error. It may come from a promotion, a holiday, a supply issue, a data problem, or a real business event.
+An anomaly can come from a promotion, a holiday, a supply issue, a data problem, or a real business event.
 
 Anomalous Rows Table
 
@@ -348,11 +361,11 @@ This table lists only flagged periods. Use it when you need exact dates and valu
 
 Full Anomaly Results Table
 
-This table includes rolling mean, rolling standard deviation, z score, and anomaly flag.
+This table includes rolling mean, rolling standard deviation, z-score, and anomaly flag.
 
 Use it when you need to explain why the dashboard flagged a point.
 
-## Export Tab
+Export Tab
 
 Export buttons download results that match your current settings.
 
@@ -372,7 +385,7 @@ Use this order for a clear workflow.
 4. Read the KPI cards in the Overview tab.
 5. Inspect the trend and growth charts.
 6. Compare segments when needed.
-7. Open Forecasting, compare models, and show the future forecast table as the short term demand answer.
+7. Open Forecasting, compare models, and show the future forecast table as the short-term demand answer.
 8. Turn the forecast into a clear action, such as inventory, staffing, or target planning.
 9. Inspect the anomaly results.
 10. Export results after you confirm filters and settings.

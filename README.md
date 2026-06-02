@@ -6,24 +6,29 @@ ForeSightSeer: AI-Driven Demand and Revenue Forecasting Dashboard for SMEs
 
 ## Repository Overview
 
-This repository contains a bachelor-project Streamlit application that helps small and medium-sized enterprises:
+This repository contains a bachelor-project Streamlit app for small and medium-sized enterprises.
 
-- clean uploaded sales CSV data,
-- inspect data quality,
-- track revenue KPIs,
-- forecast future demand and revenue with interpretable methods,
-- detect anomalous sales behavior,
-- export cleaned data and analytical results.
+You can use it to:
 
-The implementation is intentionally focused on explainability, reproducibility, and a clear evaluation story rather than on black-box modeling.
+* clean uploaded sales CSV data,
+* check data quality,
+* track revenue KPIs,
+* forecast future demand and revenue with clear methods,
+* detect unusual sales behavior,
+* save named dashboards locally and reopen them later without uploading the CSV again,
+* export cleaned data and analysis results.
+
+The project focuses on explainability, reproducibility, and a clear evaluation story. It uses methods you can explain and test.
 
 ## Main Project Folder
 
-The application and project documentation are in:
+You’ll find the application and project documentation here:
 
 `bachelors-demand-forecasting-dashboard/`
 
 ## Quick Start
+
+Run the app with these commands:
 
 ```bash
 cd bachelors-demand-forecasting-dashboard
@@ -33,7 +38,9 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-To run the automated tests:
+Saved dashboards use a local SQLite file under `bachelors-demand-forecasting-dashboard/runtime/saved_dashboards.db`, so a deployment needs persistent disk if you want saved dashboards to survive restarts.
+
+Run the automated tests with these commands:
 
 ```bash
 cd bachelors-demand-forecasting-dashboard
@@ -43,17 +50,21 @@ pytest
 
 ## Included Documentation
 
-- `bachelors-demand-forecasting-dashboard/docs/bachelor_report.md`: aligned bachelor report draft based on the implemented system.
-- `bachelors-demand-forecasting-dashboard/README.md`: main technical and usage overview.
-- `bachelors-demand-forecasting-dashboard/requirements-validated.txt`: frozen package snapshot matching the latest validated local environment.
-- `bachelors-demand-forecasting-dashboard/docs/reproducibility_snapshot.md`: exact validated environment snapshot for the latest local verification.
-- `bachelors-demand-forecasting-dashboard/docs/technical_documentation.md`: architecture, methodology, and implementation details.
-- `bachelors-demand-forecasting-dashboard/docs/user_manual.md`: end-user instructions for operating the dashboard.
+The project includes these files:
 
-## What This Project Demonstrates
+* `bachelors-demand-forecasting-dashboard/docs/bachelor_report.md`: bachelor report draft based on the implemented system.
+* `bachelors-demand-forecasting-dashboard/README.md`: main technical and usage overview.
+* `bachelors-demand-forecasting-dashboard/requirements-validated.txt`: frozen package snapshot from the latest validated local environment.
+* `bachelors-demand-forecasting-dashboard/docs/reproducibility_snapshot.md`: exact environment snapshot from the latest local verification.
+* `bachelors-demand-forecasting-dashboard/docs/technical_documentation.md`: architecture, methodology, and implementation details.
+* `bachelors-demand-forecasting-dashboard/docs/user_manual.md`: user instructions for operating the dashboard.
 
-- Modular Python design with a clear separation between UI and business logic.
-- Explainable time-series forecasting using Moving Average and Exponential Smoothing.
-- Transparent preprocessing with explicit reporting of removed rows and normalized transaction values.
-- Automated regression coverage for preprocessing, forecasting, and anomaly detection.
-- User-facing analytical outputs suitable for a bachelor-project demonstration.
+## What This Project Shows
+
+This project shows that you can build a practical analytical dashboard with:
+
+* modular Python code that separates the UI from business logic,
+* explainable time-series forecasting with Moving Average and Exponential Smoothing,
+* clear preprocessing that reports removed rows and normalized transaction values,
+* automated regression tests for preprocessing, forecasting, and anomaly detection,
+* user-facing analytical outputs that support a bachelor-project demo.

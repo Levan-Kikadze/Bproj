@@ -176,6 +176,14 @@ Temporary Items
 
 # Streamlit
 .streamlit/secrets.toml
+bachelors-demand-forecasting-dashboard/runtime/
+bachelors-demand-forecasting-dashboard/runtime/*.db
+
+# Generated outputs and temporary presentation artifacts
+outputs/
+bachelors-demand-forecasting-dashboard/docs/assets/screenshots/tmp-*.png
 
 # Local-only bachelor project prep notes
 bachelors-demand-forecasting-dashboard/.local-notes/
+
+Grading.md
