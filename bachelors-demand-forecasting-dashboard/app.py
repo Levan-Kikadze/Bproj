@@ -93,6 +93,8 @@ RAW_FILE_NAME_KEY = "dashboard_raw_file_name"
 SOURCE_TYPE_KEY = "dashboard_source_type"
 SOURCE_NAME_KEY = "dashboard_source_name"
 ACTIVE_SAVED_DASHBOARD_KEY = "dashboard_active_saved_dashboard"
+PENDING_SAVED_DASHBOARD_LOAD_KEY = "dashboard_pending_saved_dashboard_load"
+PENDING_SAVED_DASHBOARD_DELETE_KEY = "dashboard_pending_saved_dashboard_delete"
 
 AVAILABLE_FORECAST_METHODS = ["Moving Average", "Exponential Smoothing", "Linear Regression"]
 AVAILABLE_HORIZONS = [7, 14, 30]
@@ -861,6 +863,61 @@ def delete_saved_dashboard(dashboard_name: str) -> bool:
     return get_dashboard_store().delete_dashboard(dashboard_name)
 
 
+def process_pending_saved_dashboard_actions() -> DashboardLoadResult | None:
+    """Apply any deferred saved-dashboard action before widgets render."""
+    pending_delete = st.session_state.get(PENDING_SAVED_DASHBOARD_DELETE_KEY)
+    if pending_delete:
+        removed = False
+        try:
+            removed = delete_saved_dashboard(str(pending_delete))
+        except Exception as exc:
+            st.sidebar.error(f"Could not delete saved dashboard '{pending_delete}': {exc}")
+        finally:
+            st.session_state.pop(PENDING_SAVED_DASHBOARD_DELETE_KEY, None)
+
+        if removed:
+            st.sidebar.success(f"Deleted saved dashboard '{pending_delete}'.")
+        else:
+            st.sidebar.warning(f"Could not find saved dashboard '{pending_delete}'.")
+
+        if st.session_state.get(ACTIVE_SAVED_DASHBOARD_KEY) == pending_delete:
+            _set_session_value(RAW_CSV_BYTES_KEY, b"")
+            _set_session_value(RAW_DF_CACHE_KEY, pd.DataFrame())
+            _set_session_value(RAW_FILE_NAME_KEY, None)
+            _set_session_value(SOURCE_NAME_KEY, "")
+            _set_session_value(ACTIVE_SAVED_DASHBOARD_KEY, "")
+        return None
+
+    pending_load = st.session_state.get(PENDING_SAVED_DASHBOARD_LOAD_KEY)
+    if not pending_load:
+        return None
+
+    st.session_state.pop(PENDING_SAVED_DASHBOARD_LOAD_KEY, None)
+    try:
+        record = load_saved_dashboard_record(str(pending_load))
+    except KeyError as exc:
+        st.sidebar.error(str(exc))
+        return None
+
+    raw_df, warnings, error = read_uploaded_csv_bytes(record.raw_csv_bytes)
+    if error:
+        st.sidebar.error(error)
+        return None
+
+    for warning in warnings:
+        st.sidebar.warning(warning)
+
+    apply_saved_dashboard_record(record, raw_df)
+    st.sidebar.success(f"Loaded saved dashboard '{record.name}' from {record.updated_at}.")
+    return DashboardLoadResult(
+        raw_df=raw_df,
+        raw_csv_bytes=record.raw_csv_bytes,
+        source_type=record.source_type,
+        source_name=record.name,
+        raw_file_name=record.raw_file_name,
+    )
+
+
 def prime_state_for_source(raw_df: pd.DataFrame, *, dashboard_name: str | None = None) -> None:
     """Set safe defaults for widgets tied to the current raw dataset."""
     clear_dynamic_filter_state()
@@ -931,6 +988,10 @@ def render_dashboard_save_panel(filter_columns: list[str]) -> None:
 def load_dashboard_source_from_sidebar() -> DashboardLoadResult:
     """Render the source selector and load the selected CSV payload."""
     render_help_heading("1. Data Source", HELP_TEXT["data_source"], container=st.sidebar, level="header")
+    pending_result = process_pending_saved_dashboard_actions()
+    if pending_result is not None:
+        return pending_result
+
     available_source_modes = ["Bundled demo dataset", "Upload CSV", "Saved dashboard"]
     current_mode = st.session_state.get(DATA_SOURCE_MODE_KEY, available_source_modes[0])
     if current_mode not in available_source_modes:
@@ -975,20 +1036,8 @@ def load_dashboard_source_from_sidebar() -> DashboardLoadResult:
             return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", "", None)
 
         if delete_clicked:
-            removed = delete_saved_dashboard(saved_dashboard_name)
-            if removed:
-                st.sidebar.success(f"Deleted saved dashboard '{saved_dashboard_name}'.")
-            else:
-                st.sidebar.warning(f"Could not find saved dashboard '{saved_dashboard_name}'.")
-            _set_session_value(SAVED_DASHBOARD_SELECTION_KEY, "Select a saved dashboard")
-            clear_dynamic_filter_state()
-            _set_session_value(RAW_CSV_BYTES_KEY, b"")
-            _set_session_value(RAW_DF_CACHE_KEY, pd.DataFrame())
-            _set_session_value(RAW_FILE_NAME_KEY, None)
-            _set_session_value(SOURCE_NAME_KEY, "")
-            _set_session_value(SOURCE_TYPE_KEY, "saved_dashboard")
-            _set_session_value(ACTIVE_SAVED_DASHBOARD_KEY, "")
-            return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", saved_dashboard_name, None)
+            st.session_state[PENDING_SAVED_DASHBOARD_DELETE_KEY] = saved_dashboard_name
+            rerun_app()
 
         active_saved_dashboard = st.session_state.get(ACTIVE_SAVED_DASHBOARD_KEY)
         raw_df_cache = st.session_state.get(RAW_DF_CACHE_KEY)
@@ -1000,35 +1049,13 @@ def load_dashboard_source_from_sidebar() -> DashboardLoadResult:
             and bool(current_raw_csv_bytes)
         )
 
-        if not load_clicked and not has_cached_dashboard:
+        if load_clicked:
+            st.session_state[PENDING_SAVED_DASHBOARD_LOAD_KEY] = saved_dashboard_name
+            rerun_app()
+
+        if not has_cached_dashboard:
             st.sidebar.info("Select a saved dashboard and click Load to restore it.")
             return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", saved_dashboard_name, None)
-
-        if load_clicked or not has_cached_dashboard:
-            try:
-                record = load_saved_dashboard_record(saved_dashboard_name)
-            except KeyError as exc:
-                st.sidebar.error(str(exc))
-                return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", saved_dashboard_name, None)
-
-            raw_df, warnings, error = read_uploaded_csv_bytes(record.raw_csv_bytes)
-            if error:
-                st.sidebar.error(error)
-                return DashboardLoadResult(pd.DataFrame(), b"", "saved_dashboard", saved_dashboard_name, record.raw_file_name)
-
-            for warning in warnings:
-                st.sidebar.warning(warning)
-
-            apply_saved_dashboard_record(record, raw_df)
-            if load_clicked:
-                st.sidebar.success(f"Loaded saved dashboard '{record.name}' from {record.updated_at}.")
-            return DashboardLoadResult(
-                raw_df=raw_df,
-                raw_csv_bytes=record.raw_csv_bytes,
-                source_type=record.source_type,
-                source_name=record.name,
-                raw_file_name=record.raw_file_name,
-            )
 
         cached_raw_df = st.session_state.get(RAW_DF_CACHE_KEY)
         if isinstance(cached_raw_df, pd.DataFrame):

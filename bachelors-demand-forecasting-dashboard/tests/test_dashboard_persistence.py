@@ -6,9 +6,24 @@ import app
 from src.dashboard_store import DashboardStore
 
 
+class _NoOpSidebar:
+    def success(self, *args, **kwargs):
+        return None
+
+    def warning(self, *args, **kwargs):
+        return None
+
+    def error(self, *args, **kwargs):
+        return None
+
+    def info(self, *args, **kwargs):
+        return None
+
+
 def test_saved_dashboard_record_restores_selected_source_and_controls(monkeypatch, tmp_path) -> None:
     fake_session_state: dict[str, object] = {}
     monkeypatch.setattr(app.st, "session_state", fake_session_state, raising=False)
+    monkeypatch.setattr(app.st, "sidebar", _NoOpSidebar(), raising=False)
 
     raw_csv_bytes = b"date,revenue,store_id\n2024-01-01,100,A\n2024-01-02,150,B\n"
     raw_df, warnings, error = app.read_uploaded_csv_bytes(raw_csv_bytes)
@@ -77,3 +92,55 @@ def test_saved_dashboard_record_restores_selected_source_and_controls(monkeypatc
     assert isinstance(fake_session_state[app.RAW_DF_CACHE_KEY], pd.DataFrame)
     assert fake_session_state[app.RAW_DF_CACHE_KEY].equals(raw_df)
 
+
+def test_pending_saved_dashboard_load_applies_before_widgets(monkeypatch, tmp_path) -> None:
+    fake_session_state: dict[str, object] = {}
+    monkeypatch.setattr(app.st, "session_state", fake_session_state, raising=False)
+    monkeypatch.setattr(app.st, "sidebar", _NoOpSidebar(), raising=False)
+
+    raw_csv_bytes = b"date,revenue,store_id\n2024-01-01,100,A\n2024-01-02,150,B\n"
+    store = DashboardStore(tmp_path / "saved_dashboards.db")
+    store.save_dashboard(
+        name="Pending Dashboard",
+        source_type="Upload CSV",
+        raw_csv_bytes=raw_csv_bytes,
+        ui_state={
+            "source_mode": "Upload CSV",
+            "dashboard_name": "Pending Dashboard",
+            "source_name": "orders.csv",
+            "source_type": "uploaded_csv",
+            "date_col": "date",
+            "revenue_col": "revenue",
+            "transactions_col": "None",
+            "holiday_col": "None",
+            "promotion_col": "None",
+            "filter_columns": ["store_id"],
+            "frequency": "Daily",
+            "overview_dimension": "store_id",
+            "forecast_methods": ["Moving Average"],
+            "forecast_primary_method": "Moving Average",
+            "forecast_horizon": 7,
+            "forecast_confidence": 0.95,
+            "forecast_segment_dimension": "None",
+            "forecast_window": 7,
+            "forecast_use_trend": True,
+            "forecast_use_seasonality": False,
+            "anomaly_window": 14,
+            "anomaly_threshold": 3.0,
+            "filter_values": {"store_id": ["A"]},
+        },
+        raw_file_name="orders.csv",
+    )
+    monkeypatch.setattr(app, "get_dashboard_store", lambda: store)
+
+    fake_session_state[app.PENDING_SAVED_DASHBOARD_LOAD_KEY] = "Pending Dashboard"
+
+    result = app.process_pending_saved_dashboard_actions()
+
+    assert result is not None
+    assert result.source_name == "Pending Dashboard"
+    assert fake_session_state[app.DATA_SOURCE_MODE_KEY] == "Saved dashboard"
+    assert fake_session_state[app.SAVED_DASHBOARD_SELECTION_KEY] == "Pending Dashboard"
+    assert fake_session_state[app.DATE_COL_KEY] == "date"
+    assert fake_session_state[app.REVENUE_COL_KEY] == "revenue"
+    assert fake_session_state[app.RAW_CSV_BYTES_KEY] == raw_csv_bytes
