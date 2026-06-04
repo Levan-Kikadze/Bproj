@@ -6,11 +6,10 @@
 
 Small and medium sized enterprises often keep sales data in spreadsheets or CSV files. Many still need a simple way to check data quality, track sales performance, forecast demand, and find unusual sales behavior.
 
-This project solves that problem with an interactive Streamlit dashboard. You upload sales data, map the key columns, review the cleaned dataset, and turn raw rows into useful business outputs.
+This project solves that problem with an interactive Streamlit dashboard. The system allows users to upload sales data, map the key columns, review the cleaned dataset, and turn raw rows into useful business outputs.
 
-The system uses clear methods that you can explain. It supports data cleaning, aggregation, KPI reporting, forecasting with Moving Average, Exponential Smoothing, and Linear Regression, rolling z score anomaly detection, and CSV export. The code uses reusable Python modules. Automated regression tests check the main business logic.
+The system uses clear methods that can be explained easily. It supports data cleaning, aggregation, KPI reporting, forecasting with Moving Average, Exponential Smoothing, and Linear Regression, rolling z score anomaly detection, and CSV export. The code uses reusable Python modules. Automated regression tests check the main business logic.
 
-With the bundled sample dataset, the system processed 6,840 rows and did not need any data loss corrections. It produced total revenue of $9,444,661.18. In the default daily evaluation setup, the Moving Average baseline performed best. It reached an MAE of 1,808.04 and a MAPE of 7.88%. These results show that a lightweight and explainable dashboard can support SME decisions while staying realistic for a bachelor level software and data project.
 
 ## Introduction
 
@@ -18,7 +17,7 @@ Sales planning creates regular problems for SMEs. Many businesses record transac
 
 Commercial analytics platforms can cost too much or add too much complexity for smaller organizations. Spreadsheet only workflows also make repeatable analysis harder. They often depend on manual checks, copied formulas, and personal judgment.
 
-This project offers a practical alternative. ForeSightSeer is a lightweight dashboard that accepts CSV sales data and returns clear business outputs. The goal is to build a transparent decision support system that you can explain, test, and demonstrate within the scope of a bachelor project.
+This project offers a practical alternative. ForeSightSeer is a lightweight dashboard that accepts CSV sales data and returns clear business outputs. The goal is to build a transparent decision support system that can be explained, tested, and demonstrated within the scope of a bachelor project.
 
 ## Problem Statement
 
@@ -34,7 +33,7 @@ Without these features, managers rely on manual inspection, inconsistent spreads
 
 ## Project Objectives
 
-This project has these objectives.
+This project had these objectives.
 
 1. Build an interactive dashboard that accepts CSV sales data.
 2. Provide clear preprocessing and data quality reporting.
@@ -64,8 +63,6 @@ The implemented system supports these functions.
 12. Chronological 80/20 train and test evaluation with MAE and MAPE.
 13. Anomaly detection with rolling z scores.
 14. CSV export of cleaned aggregated data, forecast outputs, and anomaly outputs.
-
-The project excludes real time ingestion, multivariate machine learning, database integration, authentication, and production deployment pipelines.
 
 ## Why This Problem Matters for SMEs
 
@@ -390,3 +387,39 @@ This project delivers a practical and explainable dashboard for SME sales analys
 The final implementation matches the project goal: build an accessible decision support tool with clear methods and measurable outputs. Modular Python code, transparent statistical methods, and automated tests make the system technically coherent and academically defensible.
 
 The evaluation on the bundled sample dataset shows that the dashboard works end to end and produces results that you can discuss critically. The main contribution is a practical workflow that helps a smaller business move from manual spreadsheet checking to clearer and more data backed short term decisions.
+
+## Bibliography
+
+1. Streamlit Documentation. (2026). *The Streamlit Open Source Framework*. [https://docs.streamlit.io](https://docs.streamlit.io)
+2. McKinney, W. (2010). Data Structures for Statistical Computing in Python. *Proceedings of the 9th Python in Science Conference*, 51-56.
+3. Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., & Duchesnay, E. (2011). Scikit-learn: Machine Learning in Python. *Journal of Machine Learning Research*, 12, 2825-2830.
+4. Hyndman, R.J., & Athanasopoulos, G. (2021). *Forecasting: Principles and Practice* (3rd ed.). OTexts: Melbourne, Australia. [https://otexts.com/fpp3/](https://otexts.com/fpp3/)
+5. Seabold, S., & Perktold, J. (2010). *Statsmodels: Econometric and Statistical Modeling with Python*. Proceedings of the 9th Python in Science Conference.
+6. Hunter, J. D. (2007). Matplotlib: A 2D Graphics Environment. *Computing in Science & Engineering*, 9(3), 90-95.
+7. Plotly Technologies Inc. (2015). *Collaborative Data Science*. Montréal, QC. [https://plot.ly](https://plot.ly)
+
+## Appendix
+
+### Appendix A: Data Mapping Example
+
+To ensure compatibility, users map their raw CSV columns to the system icons. Below is a typical mapping for a retail dataset:
+
+| User CSV Column | Dashboard Internal Key | Description |
+| :--- | :--- | :--- |
+| `Transaction_Date` | `date_col` | Used for chronological sorting and aggregation. |
+| `Net_Sales_USD` | `revenue_col` | The primary target for KPIs and forecasting. |
+| `Product_Category` | `dimension_col` | Used for filtering and segment analysis. |
+| `Is_Promotion` | `promotion_col` | Optional binary flag for Linear Regression features. |
+| `Order_ID` | `transaction_col` | Used to calculate Average Order Value (AOV). |
+
+### Appendix B: Test Coverage Summary
+
+The project maintains a test suite (under `tests/`) that validates the core business logic.
+
+| Module | Test Categories | Key Verified Behaviors |
+| :--- | :--- | :--- |
+| **Preprocessing** | Cleaning, Aggregation | Duplicate removal, handling negative revenue, freq conversion. |
+| **Forecasting** | Accuracy, Horizon | MAPE/MAE calculation, confidence interval bounds, future frame shape. |
+| **KPIs** | Math Logic | Aggregating revenue vs transaction counts correctly. |
+| **Anomaly** | Statistical Detection | Z-score thresholding and flagging logical outliers. |
+| **Persistence** | State Management | Saving and loading dashboard configurations without data loss. |

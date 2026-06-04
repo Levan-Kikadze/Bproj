@@ -28,7 +28,7 @@ Use the Forecasting tab. Compare the models, review the future forecast table, a
 
 Use the Anomaly Detection tab. It highlights unusual spikes or drops that may come from promotions, outages, data issues, or real business events.
 
-## Starting the App
+## Starting the App Locally
 
 Open a terminal in the project folder and run:
 
@@ -48,22 +48,6 @@ The app opens in your browser. If you don't upload a CSV file, the dashboard use
 
 If you're new to the app, open the Guide tab before you work with real data.
 
-## Recommended Screenshot Placement
-
-The repository includes example screenshots in assets/screenshots/. For a final PDF or report, place them like this:
-
-| Manual section | Screenshot file | Recommended dataset | What the screenshot should show |
-| --- | --- | --- | --- |
-| Starting the App / Uploading Data / Using Filters | assets/screenshots/overview-home.png | Full clean sample | Sidebar data source, column mapping, and visible dashboard navigation |
-| Overview Tab | assets/screenshots/overview-tab.png | Full clean sample | Revenue trend or breakdown output from the main KPI view |
-| Data Quality Tab | assets/screenshots/data-quality-tab.png | Data quality issues showcase | Removed rows, corrections, and cleaned date range |
-| Forecasting Tab | assets/screenshots/forecast-chart-detail.png | Full clean sample | Actual vs predicted values and future forecast output |
-| Anomaly Detection Tab | assets/screenshots/anomaly-detection-tab.png | Anomalies and missing periods showcase | Flagged anomaly output for investigation |
-| Export Tab | assets/screenshots/export-tab.png | Full clean sample | Export buttons for cleaned, forecast, and anomaly outputs |
-
-If you need cleaner crops for the final submission, keep the same placement and recapture the images with the recommended dataset for each section.
-
-![Starting the app, mapping columns, and navigating the dashboard](assets/screenshots/overview-home.png)
 
 ## Uploading Data
 
@@ -75,6 +59,8 @@ If you need cleaner crops for the final submission, keep the same placement and 
 6. Select transactions, holiday, and promotion columns if you have them.
 7. Select filter columns such as product category, store, or product ID if you need them.
 8. Choose the aggregation frequency: Daily, Weekly, or Monthly.
+
+![Upload and raw preview showing the selected dataset and mapped columns](assets/screenshots/upload_preview.png)
 
 Use the small i popovers in the app when you need help reading a section.
 
@@ -88,11 +74,13 @@ If you select all values, the dashboard analyzes the full cleaned dataset.
 
 Filters change all KPIs, charts, forecasts, anomalies, and exports.
 
+
+
 ## Overview Tab
 
 Business use: this is the fastest way to answer, "How is the business performing right now?"
 
-![Overview output showing trend and breakdown analysis](assets/screenshots/overview-tab.png)
+![Overview output showing the raw data preview, KPI summary, and trend analysis](assets/screenshots/overview_1.png)
 
 The Overview tab shows:
 
@@ -112,11 +100,15 @@ It also shows:
 
 Use the i help popovers beside the chart sections for simple interpretation guidance.
 
+![Overview output showing the revenue breakdown by product category](assets/screenshots/overview_2.png)
+
+
+
 ## Data Quality Tab
 
 Business use: this tab is your trust checkpoint before you present KPIs or forecasts.
 
-![Data Quality summary showing retained rows, removed rows, and corrections](assets/screenshots/data-quality-tab.png)
+![Data Quality summary showing retained rows, removed rows, and corrections](assets/screenshots/data-quality.png)
 
 The Data Quality tab explains how the app cleaned the uploaded data. It shows:
 
@@ -141,7 +133,7 @@ The total removed-row metric counts each removed row once. The issue-specific co
 
 Business use: this tab answers, "What should demand or revenue look like next, and how uncertain is that estimate?"
 
-![Forecasting output showing the forecast chart and model result area](assets/screenshots/forecast-chart-detail.png)
+![Forecasting output showing the forecast chart and model result area](assets/screenshots/forecast.png)
 
 The Forecasting tab lets you choose:
 
@@ -172,7 +164,7 @@ If you're new to forecasting, start with the model comparison table. Then inspec
 
 Business use: this tab helps you decide which unusual periods need investigation before you change stock, staffing, or targets.
 
-![Anomaly Detection output showing the anomaly results section](assets/screenshots/anomaly-detection-tab.png)
+![Anomaly Detection output showing the anomaly results section](assets/screenshots/anomaly-detection.png)
 
 The Anomaly Detection tab uses rolling z scores to find unusual revenue values.
 
@@ -196,7 +188,7 @@ Use the i help beside the anomaly sections to understand what counts as unusual 
 
 The Export tab provides downloads for these outputs:
 
-![Export tab with download buttons for dashboard outputs](assets/screenshots/export-tab.png)
+![Export tab with save and download controls for dashboard outputs](assets/screenshots/save-export.png)
 
 1. Cleaned aggregated dataset.
 2. Forecast results.

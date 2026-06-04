@@ -182,6 +182,8 @@ bachelors-demand-forecasting-dashboard/runtime/*.db
 # Generated outputs and temporary presentation artifacts
 outputs/
 bachelors-demand-forecasting-dashboard/docs/assets/screenshots/tmp-*.png
+bachelors-demand-forecasting-dashboard/docs/*.pdf
+bachelors-demand-forecasting-dashboard/docs/*.html
 
 # Local-only bachelor project prep notes
 bachelors-demand-forecasting-dashboard/.local-notes/

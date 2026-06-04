@@ -2,10 +2,6 @@
 
 ForeSightSeer user guide for reading dashboards and preparing demos.
 
-Purpose of This Guide
-
-Use this guide when you're new to data analysis, charts, or forecasting. You'll learn what each dashboard section means and how to explain it clearly.
-
 In the app, use the small information buttons next to section titles. They give you short notes beside each chart or table. This guide gives you the full version.
 
 Before You Start
