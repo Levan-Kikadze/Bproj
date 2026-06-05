@@ -4,7 +4,6 @@ ForeSightSeer: Technical Documentation
 
 Small and medium sized enterprises often keep sales data in CSV files. They still need a simple way to check data quality, track revenue KPIs, forecast future demand, and find unusual trends.
 
-This project gives you a Streamlit dashboard that turns uploaded sales data into useful business outputs. It uses clear statistical methods that you can explain during a demo, report review, or bachelor defense.
 
 2. System Architecture
 
@@ -37,7 +36,7 @@ Handles formatting, CSV export, and helper functions.
 tests/
 Stores pytest tests for the core business logic.
 
-The Streamlit app receives your input, sends reusable calculations to the src modules, and shows tables, metrics, charts, warnings, and downloads.
+The Streamlit app receives the users' input, sends reusable calculations to the src modules, and shows tables, metrics, charts, warnings, and downloads.
 
 3. UML Diagrams
 
@@ -90,7 +89,6 @@ Reading focus:
 
 4. Diagram Regeneration Workflow
 
-If you update any .mmd source diagram, regenerate all assets from the project root:
 
 ```bash
 python render_uml.py
@@ -126,7 +124,6 @@ Runs Exponential Smoothing and supports prediction intervals for Linear Regressi
 pytest, version 8.0 or later
 Runs automated regression tests.
 
-These choices fit the project because they keep the code readable, support fast development, and make the methods easy to explain. The system uses a Python first design because the project focuses on analysis, dashboard use, and reproducible results.
 
 6. User Interface and External Interfaces
 
@@ -165,7 +162,7 @@ The app also stores named dashboard snapshots locally.
 3. Saved dashboards are listed in the sidebar so users can load or delete them later.
 4. Reloading a saved dashboard restores the source selection, column mappings, filters, and analysis controls before the charts render.
 
-The implementation uses a local SQLite database under `runtime/saved_dashboards.db`. Because the store lives on disk inside the app runtime, deployments need persistent local storage if they should survive restarts.
+The implementation uses a local SQLite database under `runtime/saved_dashboards.db`. Because the store lives on disk inside the app runtime.
 
 7. Installation, Configuration, and Troubleshooting
 
